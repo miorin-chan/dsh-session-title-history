@@ -38,6 +38,19 @@ var import_react = require("react");
 
 // src/lib/history.ts
 var HISTORY_PATH = "/api/session-title-history";
+function groupTitleHistory(rows) {
+  const groups = [];
+  let unchanged = [];
+  for (const revision of rows) {
+    if (revision.previousTitle === revision.title) {
+      unchanged.push(revision);
+      continue;
+    }
+    groups.push({ revision, unchanged });
+    unchanged = [];
+  }
+  return groups;
+}
 
 // src/client/locale.ts
 var en = {
@@ -49,11 +62,12 @@ var en = {
   retry: "Retry",
   manual: "Manual edit",
   provider: "Automatically generated",
-  fallback: "Automatically generated \xB7 Built-in rule",
+  fallback: "Built-in title",
   first: "First title",
   unchanged: "Text unchanged",
   inherited: "Inherited from parent session",
-  previous: "Previous title"
+  showUnchanged: "Show unchanged writes ({count})",
+  hideUnchanged: "Hide unchanged writes"
 };
 var labels = {
   en,
@@ -66,11 +80,12 @@ var labels = {
     retry: "\u91CD\u8BD5",
     manual: "\u624B\u52A8\u4FEE\u6539",
     provider: "\u81EA\u52A8\u751F\u6210",
-    fallback: "\u81EA\u52A8\u751F\u6210 \xB7 \u5185\u7F6E\u89C4\u5219",
+    fallback: "\u5185\u7F6E\u89C4\u5219\u751F\u6210",
     first: "\u9996\u6B21\u547D\u540D",
     unchanged: "\u6587\u5B57\u672A\u53D8",
     inherited: "\u7EE7\u627F\u81EA\u7236\u4F1A\u8BDD",
-    previous: "\u65E7\u6807\u9898"
+    showUnchanged: "\u5C55\u5F00\u540C\u540D\u5199\u5165\uFF08{count} \u6761\uFF09",
+    hideUnchanged: "\u6298\u53E0\u540C\u540D\u5199\u5165"
   },
   ja: {
     history: "\u30BF\u30A4\u30C8\u30EB\u5C65\u6B74",
@@ -81,11 +96,12 @@ var labels = {
     retry: "\u518D\u8A66\u884C",
     manual: "\u624B\u52D5\u5909\u66F4",
     provider: "\u81EA\u52D5\u751F\u6210",
-    fallback: "\u81EA\u52D5\u751F\u6210 \xB7 \u7D44\u307F\u8FBC\u307F\u30EB\u30FC\u30EB",
+    fallback: "\u7D44\u307F\u8FBC\u307F\u30EB\u30FC\u30EB\u3067\u751F\u6210",
     first: "\u6700\u521D\u306E\u30BF\u30A4\u30C8\u30EB",
     unchanged: "\u30C6\u30AD\u30B9\u30C8\u5909\u66F4\u306A\u3057",
     inherited: "\u89AA\u30BB\u30C3\u30B7\u30E7\u30F3\u304B\u3089\u7D99\u627F",
-    previous: "\u4EE5\u524D\u306E\u30BF\u30A4\u30C8\u30EB"
+    showUnchanged: "\u540C\u3058\u30BF\u30A4\u30C8\u30EB\u306E\u8A18\u9332\u3092\u8868\u793A\uFF08{count} \u4EF6\uFF09",
+    hideUnchanged: "\u540C\u3058\u30BF\u30A4\u30C8\u30EB\u306E\u8A18\u9332\u3092\u6298\u308A\u305F\u305F\u3080"
   },
   de: {
     history: "Titelverlauf",
@@ -96,11 +112,12 @@ var labels = {
     retry: "Erneut versuchen",
     manual: "Manuell ge\xE4ndert",
     provider: "Automatisch erstellt",
-    fallback: "Automatisch erstellt \xB7 Integrierte Regel",
+    fallback: "Durch integrierte Regel erstellt",
     first: "Erster Titel",
     unchanged: "Text unver\xE4ndert",
     inherited: "Aus der \xFCbergeordneten Sitzung \xFCbernommen",
-    previous: "Vorheriger Titel"
+    showUnchanged: "Unver\xE4nderte Eintr\xE4ge anzeigen ({count})",
+    hideUnchanged: "Unver\xE4nderte Eintr\xE4ge ausblenden"
   },
   es: {
     history: "Historial de t\xEDtulos",
@@ -111,11 +128,12 @@ var labels = {
     retry: "Reintentar",
     manual: "Edici\xF3n manual",
     provider: "Generado autom\xE1ticamente",
-    fallback: "Generado autom\xE1ticamente \xB7 Regla integrada",
+    fallback: "Generado por regla integrada",
     first: "Primer t\xEDtulo",
     unchanged: "Texto sin cambios",
     inherited: "Heredado de la sesi\xF3n de origen",
-    previous: "T\xEDtulo anterior"
+    showUnchanged: "Mostrar registros sin cambios ({count})",
+    hideUnchanged: "Ocultar registros sin cambios"
   },
   fr: {
     history: "Historique des titres",
@@ -126,11 +144,12 @@ var labels = {
     retry: "R\xE9essayer",
     manual: "Modification manuelle",
     provider: "G\xE9n\xE9r\xE9 automatiquement",
-    fallback: "G\xE9n\xE9r\xE9 automatiquement \xB7 R\xE8gle int\xE9gr\xE9e",
+    fallback: "G\xE9n\xE9r\xE9 par une r\xE8gle int\xE9gr\xE9e",
     first: "Premier titre",
     unchanged: "Texte inchang\xE9",
     inherited: "H\xE9rit\xE9 de la session parente",
-    previous: "Titre pr\xE9c\xE9dent"
+    showUnchanged: "Afficher les entr\xE9es inchang\xE9es ({count})",
+    hideUnchanged: "Masquer les entr\xE9es inchang\xE9es"
   },
   pt: {
     history: "Hist\xF3rico de t\xEDtulos",
@@ -141,11 +160,12 @@ var labels = {
     retry: "Tentar novamente",
     manual: "Edi\xE7\xE3o manual",
     provider: "Gerado automaticamente",
-    fallback: "Gerado automaticamente \xB7 Regra integrada",
+    fallback: "Gerado por regra integrada",
     first: "Primeiro t\xEDtulo",
     unchanged: "Texto inalterado",
     inherited: "Herdado da sess\xE3o de origem",
-    previous: "T\xEDtulo anterior"
+    showUnchanged: "Mostrar registos inalterados ({count})",
+    hideUnchanged: "Ocultar registos inalterados"
   },
   ru: {
     history: "\u0418\u0441\u0442\u043E\u0440\u0438\u044F \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u043E\u0432",
@@ -156,11 +176,12 @@ var labels = {
     retry: "\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C",
     manual: "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u043E \u0432\u0440\u0443\u0447\u043D\u0443\u044E",
     provider: "\u0421\u043E\u0437\u0434\u0430\u043D\u043E \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438",
-    fallback: "\u0421\u043E\u0437\u0434\u0430\u043D\u043E \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \xB7 \u0412\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u043E\u0435 \u043F\u0440\u0430\u0432\u0438\u043B\u043E",
+    fallback: "\u0421\u043E\u0437\u0434\u0430\u043D\u043E \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u043C \u043F\u0440\u0430\u0432\u0438\u043B\u043E\u043C",
     first: "\u041F\u0435\u0440\u0432\u044B\u0439 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A",
     unchanged: "\u0422\u0435\u043A\u0441\u0442 \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F",
     inherited: "\u0423\u043D\u0430\u0441\u043B\u0435\u0434\u043E\u0432\u0430\u043D\u043E \u043E\u0442 \u0440\u043E\u0434\u0438\u0442\u0435\u043B\u044C\u0441\u043A\u043E\u0439 \u0441\u0435\u0441\u0441\u0438\u0438",
-    previous: "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0439 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A"
+    showUnchanged: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439 ({count})",
+    hideUnchanged: "\u0421\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439"
   }
 };
 
@@ -187,19 +208,47 @@ var css = `
   .title-history-dialog > header { display: flex; align-items: center; justify-content: space-between; padding: 1rem; gap: 1rem; }
   .title-history-dialog h2 { margin: 0; font-size: 1rem; }
   .title-history-dialog header button { color: inherit; background: transparent; border: 0; font: inherit; cursor: pointer; }
-  .title-history-content { width: min(30rem, 100%); max-height: min(58vh, 36rem); overflow: auto; padding: 0 .25rem; }
-  .title-history-content:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, Highlight); outline-offset: -2px; }
-  .title-history-dialog .title-history-content { width: auto; padding: 0 1rem 1rem; }
-  .title-history-source { flex-basis: 100%; overflow-wrap: anywhere; }
-  .title-history-content > p { margin: 0 0 .75rem; color: var(--dsw-alias-label-secondary, inherit); overflow-wrap: anywhere; }
-  .title-history-content ol { margin: 0; padding: 0; list-style: none; }
-  .title-history-content li { padding: .75rem .1rem; border-top: 1px solid var(--dsw-alias-border-l1); }
-  .title-history-meta { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; }
-  .title-history-meta .title-history-source-label { flex: none; }
+  .title-history-modal { width: min(28rem, 100%); max-height: 100%; }
+  .title-history-modal-content { min-height: 0; }
+  .title-history-modal-content > :last-child { min-height: 0; margin-top: 0; }
+  .title-history-content { max-height: min(60vh, 32rem); min-height: 0; overflow: auto; }
+  .title-history-content:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -2px; }
+  .title-history-dialog .title-history-content { padding: 0 1rem 1rem; }
+  .title-history-list, .title-history-repeats { margin: 0; padding: 0; list-style: none; }
+  .title-history-group { padding: 10px 0; }
+  .title-history-group + .title-history-group { border-top: 1px solid var(--dsw-alias-border-l1); }
+  .title-history-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .title-history-title { margin: 0; font-size: 14px; font-weight: 500; line-height: 22px; overflow-wrap: anywhere; }
+  .title-history-meta {
+    display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px;
+    margin-top: 4px; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary);
+  }
   .title-history-meta time { margin-inline-start: auto; }
-  .title-history-meta, .title-history-notes, .title-history-previous { color: var(--dsw-alias-label-secondary, inherit); font-size: .8125em; }
-  .title-history-content li p { margin: .25rem 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
-  .title-history-notes { display: flex; flex-wrap: wrap; gap: .25rem .75rem; }
+  .title-history-provider {
+    border: 0; padding: 0; background: transparent; color: inherit; font: inherit; cursor: help;
+    text-decoration: underline dotted; text-underline-offset: 3px;
+  }
+  .title-history-provider-details { max-width: 100%; overflow-wrap: anywhere; }
+  .title-history-disclosure { flex: none; margin-block: -3px; transition: opacity var(--ds-transition-duration); }
+  .title-history-disclosure svg { transition: transform var(--ds-transition-duration); }
+  .title-history-disclosure[aria-expanded="true"] svg { transform: rotate(180deg); }
+  @media (hover: hover) and (pointer: fine) {
+    .title-history-disclosure[aria-expanded="false"] { opacity: 0; }
+    .title-history-group:hover .title-history-disclosure,
+    .title-history-group:focus-within .title-history-disclosure { opacity: 1; }
+  }
+  @media (any-pointer: coarse) {
+    .title-history-disclosure[aria-expanded="false"] { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .title-history-disclosure, .title-history-disclosure svg { transition: none; }
+  }
+  .title-history-repeats {
+    margin-top: 8px; padding-inline-start: 10px;
+    border-inline-start: 1px solid var(--dsw-alias-border-l1);
+  }
+  .title-history-repeats > li { padding: 3px 0; }
+
 `;
 function nativePrimitives() {
   try {
@@ -260,32 +309,52 @@ async function loadHistory(sessionId, signal) {
   if (data === null || typeof data !== "object" || !("history" in data) || !Array.isArray(data.history) || !data.history.every(isRevision)) throw new Error("Invalid session title history response");
   return data.history;
 }
-function HistoryList({ rows, t, language, Tag }) {
-  const dates = new Intl.DateTimeFormat(language, { dateStyle: "medium", timeStyle: "medium" });
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", { role: "list", children: rows.map((row) => {
-    const source = row.source.kind === "user" ? t("manual") : t(row.source.kind);
-    const details = row.source.kind === "provider" ? row.source.model ? `${row.source.provider} \xB7 ${row.source.model.provider}/${row.source.model.model}` : row.source.provider : void 0;
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "title-history-meta", children: [
-        Tag ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Tag, { className: "title-history-source-label", tone: "neutral", children: source }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: source }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("time", { dateTime: new Date(row.time).toISOString(), children: dates.format(row.time) }),
-        details !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("bdi", { className: "title-history-source", children: details })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { dir: "auto", children: row.title }) }),
-      row.previousTitle !== null && row.previousTitle !== row.title && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "title-history-previous", children: [
-        t("previous"),
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("bdi", { children: row.previousTitle })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "title-history-notes", children: [
-        row.previousTitle === null && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t("first") }),
-        row.previousTitle === row.title && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t("unchanged") }),
-        row.inherited && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t("inherited") })
-      ] })
-    ] }, row.seq);
-  }) });
+function RevisionMeta({ row, dates, t, Tooltip, unchanged = false }) {
+  const source = row.source.kind === "user" ? t("manual") : t(row.source.kind);
+  const details = row.source.kind === "provider" ? row.source.model ? `${row.source.provider} \xB7 ${row.source.model.provider}/${row.source.model.model}` : row.source.provider : void 0;
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "title-history-meta", children: [
+    details === void 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: source }) : Tooltip ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Tooltip, { label: details, side: "top", portal: true, delayMs: 260, maxWidth: 320, openOnClick: true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "title-history-provider", type: "button", children: source }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("details", { className: "title-history-provider-details", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("summary", { children: source }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("bdi", { children: details })
+    ] }),
+    row.previousTitle === null && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t("first") }),
+    unchanged && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t("unchanged") }),
+    row.inherited && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t("inherited") }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("time", { dateTime: new Date(row.time).toISOString(), children: dates.format(row.time) })
+  ] });
 }
-function HistoryContent({ target, t, language, Button, Tag }) {
+function HistoryGroup({ group, dates, t, ui }) {
+  const [expanded, setExpanded] = (0, import_react.useState)(false);
+  const repeatsId = (0, import_react.useId)();
+  const { revision, unchanged } = group;
+  const { Button, Tooltip, IconChevronDownOutlineRegular: Chevron } = ui;
+  const disclosureLabel = t(expanded ? "hideUnchanged" : "showUnchanged", { count: unchanged.length });
+  const disclosure = {
+    type: "button",
+    className: "title-history-disclosure",
+    "aria-label": disclosureLabel,
+    "aria-expanded": expanded,
+    "aria-controls": repeatsId,
+    onClick: () => setExpanded(!expanded)
+  };
+  const icon = Chevron ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Chevron, { size: 14 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": "true", children: expanded ? "\u2303" : "\u2304" });
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { className: "title-history-group", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "title-history-heading", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "title-history-title", dir: "auto", children: revision.title }),
+      unchanged.length > 0 && (Button ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, { ...disclosure, size: "sm", variant: "ghost", icon }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { ...disclosure, title: disclosureLabel, children: icon }))
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RevisionMeta, { row: revision, dates, t, Tooltip }),
+    unchanged.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", { id: repeatsId, className: "title-history-repeats", role: "list", hidden: !expanded, children: expanded && unchanged.map((row) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RevisionMeta, { row, dates, t, Tooltip, unchanged: true }) }, row.seq)) })
+  ] });
+}
+function HistoryList({ rows, t, language, ui }) {
+  const dates = new Intl.DateTimeFormat(language, { dateStyle: "medium", timeStyle: "medium" });
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", { className: "title-history-list", role: "list", children: groupTitleHistory(rows).map(
+    (group) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HistoryGroup, { group, dates, t, ui }, group.revision.seq)
+  ) });
+}
+function HistoryContent({ target, t, language, ui }) {
+  const { Button } = ui;
   const [state, setState] = (0, import_react.useState)({ status: "loading" });
   const [attempt, setAttempt] = (0, import_react.useState)(0);
   const region = (0, import_react.useRef)(null);
@@ -304,7 +373,6 @@ function HistoryContent({ target, t, language, Button, Tag }) {
     setAttempt(attempt + 1);
   };
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: region, className: "title-history-content", role: "region", "aria-label": t("history"), tabIndex: 0, children: [
-    target.displayTitle && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { dir: "auto", children: target.displayTitle }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { role: "status", children: [
       state.status === "loading" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: t("loading") }),
       state.status === "loaded" && state.rows.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: t("empty") })
@@ -313,12 +381,13 @@ function HistoryContent({ target, t, language, Button, Tag }) {
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { role: "alert", children: t("failed") }),
       Button ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, { variant: "outline", onClick: retry, children: t("retry") }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: retry, children: t("retry") })
     ] }),
-    state.status === "loaded" && state.rows.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HistoryList, { rows: state.rows, t, language, Tag })
+    state.status === "loaded" && state.rows.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HistoryList, { rows: state.rows, t, language, ui })
   ] });
 }
 function apply(ctx) {
   ctx.effect(() => ctx.locale.register(ID, labels), `${ID}: locale`);
-  const { Modal, Button, Tag, IconClockOutlineRegular } = nativePrimitives();
+  const ui = nativePrimitives();
+  const { Modal, IconClockOutlineRegular } = ui;
   const menuLabel = ctx.locale.bind(ID);
   let target = null;
   const listeners = /* @__PURE__ */ new Set();
@@ -370,14 +439,13 @@ function apply(ctx) {
         target: selected,
         t,
         language: ctx.locale.getLocale().active,
-        Button,
-        Tag
+        ui
       },
       selected.sessionId
     );
     return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", { children: css }),
-      Modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Modal, { open: true, onClose: close, title: t("history"), closeLabel: t("close"), children: content }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BrowserModal, { onClose: close, title: t("history"), closeLabel: t("close"), children: content })
+      Modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Modal, { open: true, className: "title-history-modal", contentClassName: "title-history-modal-content", onClose: close, title: t("history"), closeLabel: t("close"), children: content }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BrowserModal, { onClose: close, title: t("history"), closeLabel: t("close"), children: content })
     ] });
   }
   ctx.effect(() => ctx.slots.inject(OVERLAY, () => ctx.slots.register({ name: OVERLAY, id: ID, locale: ID }, HistoryOverlay)), `${ID}: overlay`);

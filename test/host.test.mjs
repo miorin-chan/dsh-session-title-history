@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { apply } from '../index.js'
-import { HISTORY_PATH, titleHistory } from '../lib/history.js'
+import { groupTitleHistory, HISTORY_PATH, titleHistory } from '../lib/history.js'
 
 const user = { kind: 'user' }
 const provider = { kind: 'provider', provider: 'title-provider', model: { provider: 'fixture', model: 'model' } }
@@ -23,6 +23,22 @@ test('keeps accepted title writes in sequence order, including identical and inh
     { seq: 1, time: 1001, title: 'Initial', previousTitle: null, source: fallback, inherited: true },
   ])
   assert.deepEqual(titleHistory([events[1]], 0), [])
+})
+
+test('groups adjacent same-title writes without merging distinct revisions that return to the same title', () => {
+  const revisions = titleHistory([
+    ...events,
+    title(6, 'Renamed', provider),
+    title(7, 'Different', user),
+    title(8, 'Renamed', user),
+  ], 6)
+  const groups = groupTitleHistory(revisions)
+  assert.deepEqual(groups.map(({ revision, unchanged }) => [revision.seq, unchanged.map(row => row.seq)]), [
+    [8, []], [7, []], [4, [6, 5]], [3, []], [1, []],
+  ])
+  assert.equal(groups[2].unchanged[1].inherited, true)
+  assert.equal(groups[2].unchanged[0].source, provider)
+  assert.deepEqual(groupTitleHistory([]), [])
 })
 
 test('reads exactly one session, rejects missing input, and releases the observation and route', async () => {

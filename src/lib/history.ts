@@ -24,3 +24,23 @@ export function titleHistory(events: readonly SessionEvent[], inheritedEventCoun
   }
   return history.reverse()
 }
+
+export interface TitleHistoryGroup {
+  readonly revision: TitleRevision
+  readonly unchanged: readonly TitleRevision[]
+}
+
+/** Attach same-title writes to the preceding title change, keeping newest-first order within each group. */
+export function groupTitleHistory(rows: readonly TitleRevision[]): TitleHistoryGroup[] {
+  const groups: TitleHistoryGroup[] = []
+  let unchanged: TitleRevision[] = []
+  for (const revision of rows) {
+    if (revision.previousTitle === revision.title) {
+      unchanged.push(revision)
+      continue
+    }
+    groups.push({ revision, unchanged })
+    unchanged = []
+  }
+  return groups
+}

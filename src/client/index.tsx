@@ -6,8 +6,8 @@ import type { ContextMenuTargetMap } from '@deepseek-ai/dsh-client-ui-context-me
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
-import { HISTORY_PATH } from '../lib/history.js'
-import type { TitleRevision } from '../lib/history.js'
+import { groupTitleHistory, HISTORY_PATH } from '../lib/history.js'
+import type { TitleHistoryGroup, TitleRevision } from '../lib/history.js'
 import { labels } from './locale.js'
 
 const ID = 'dsh-session-title-history'
@@ -19,7 +19,7 @@ export const inject = ['locale', 'slots', 'contextMenus']
 type Translation = PropsLocale<typeof ID>['t']
 type Target = ContextMenuTargetMap['session']
 type Primitives = Pick<typeof import('@deepseek-ai/dsh-client-ui-primitives'),
-  'Modal' | 'Button' | 'Tag' | 'IconClockOutlineRegular'>
+  'Modal' | 'Button' | 'Tooltip' | 'IconClockOutlineRegular' | 'IconChevronDownOutlineRegular'>
 type LoadState = { status: 'loading' | 'failed' } | { status: 'loaded'; rows: TitleRevision[] }
 type ModalProps = {
   title: string
@@ -45,19 +45,47 @@ const css = `
   .title-history-dialog > header { display: flex; align-items: center; justify-content: space-between; padding: 1rem; gap: 1rem; }
   .title-history-dialog h2 { margin: 0; font-size: 1rem; }
   .title-history-dialog header button { color: inherit; background: transparent; border: 0; font: inherit; cursor: pointer; }
-  .title-history-content { width: min(30rem, 100%); max-height: min(58vh, 36rem); overflow: auto; padding: 0 .25rem; }
-  .title-history-content:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary, Highlight); outline-offset: -2px; }
-  .title-history-dialog .title-history-content { width: auto; padding: 0 1rem 1rem; }
-  .title-history-source { flex-basis: 100%; overflow-wrap: anywhere; }
-  .title-history-content > p { margin: 0 0 .75rem; color: var(--dsw-alias-label-secondary, inherit); overflow-wrap: anywhere; }
-  .title-history-content ol { margin: 0; padding: 0; list-style: none; }
-  .title-history-content li { padding: .75rem .1rem; border-top: 1px solid var(--dsw-alias-border-l1); }
-  .title-history-meta { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; }
-  .title-history-meta .title-history-source-label { flex: none; }
+  .title-history-modal { width: min(28rem, 100%); max-height: 100%; }
+  .title-history-modal-content { min-height: 0; }
+  .title-history-modal-content > :last-child { min-height: 0; margin-top: 0; }
+  .title-history-content { max-height: min(60vh, 32rem); min-height: 0; overflow: auto; }
+  .title-history-content:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -2px; }
+  .title-history-dialog .title-history-content { padding: 0 1rem 1rem; }
+  .title-history-list, .title-history-repeats { margin: 0; padding: 0; list-style: none; }
+  .title-history-group { padding: 10px 0; }
+  .title-history-group + .title-history-group { border-top: 1px solid var(--dsw-alias-border-l1); }
+  .title-history-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .title-history-title { margin: 0; font-size: 14px; font-weight: 500; line-height: 22px; overflow-wrap: anywhere; }
+  .title-history-meta {
+    display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px;
+    margin-top: 4px; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary);
+  }
   .title-history-meta time { margin-inline-start: auto; }
-  .title-history-meta, .title-history-notes, .title-history-previous { color: var(--dsw-alias-label-secondary, inherit); font-size: .8125em; }
-  .title-history-content li p { margin: .25rem 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
-  .title-history-notes { display: flex; flex-wrap: wrap; gap: .25rem .75rem; }
+  .title-history-provider {
+    border: 0; padding: 0; background: transparent; color: inherit; font: inherit; cursor: help;
+    text-decoration: underline dotted; text-underline-offset: 3px;
+  }
+  .title-history-provider-details { max-width: 100%; overflow-wrap: anywhere; }
+  .title-history-disclosure { flex: none; margin-block: -3px; transition: opacity var(--ds-transition-duration); }
+  .title-history-disclosure svg { transition: transform var(--ds-transition-duration); }
+  .title-history-disclosure[aria-expanded="true"] svg { transform: rotate(180deg); }
+  @media (hover: hover) and (pointer: fine) {
+    .title-history-disclosure[aria-expanded="false"] { opacity: 0; }
+    .title-history-group:hover .title-history-disclosure,
+    .title-history-group:focus-within .title-history-disclosure { opacity: 1; }
+  }
+  @media (any-pointer: coarse) {
+    .title-history-disclosure[aria-expanded="false"] { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .title-history-disclosure, .title-history-disclosure svg { transition: none; }
+  }
+  .title-history-repeats {
+    margin-top: 8px; padding-inline-start: 10px;
+    border-inline-start: 1px solid var(--dsw-alias-border-l1);
+  }
+  .title-history-repeats > li { padding: 3px 0; }
+
 `
 
 /** Use the primitive components supplied by the Web shell's module table. */
@@ -118,44 +146,85 @@ async function loadHistory(sessionId: SessionId, signal: AbortSignal): Promise<T
   return data.history
 }
 
-function HistoryList({ rows, t, language, Tag }: {
+function RevisionMeta({ row, dates, t, Tooltip, unchanged = false }: {
+  row: TitleRevision
+  dates: Intl.DateTimeFormat
+  t: Translation
+  Tooltip?: Primitives['Tooltip']
+  unchanged?: boolean
+}) {
+  const source = row.source.kind === 'user' ? t('manual') : t(row.source.kind)
+  const details = row.source.kind === 'provider'
+    ? row.source.model ? `${row.source.provider} · ${row.source.model.provider}/${row.source.model.model}` : row.source.provider
+    : undefined
+  return <div className="title-history-meta">
+    {details === undefined ? <span>{source}</span> : Tooltip
+      ? <Tooltip label={details} side="top" portal delayMs={260} maxWidth={320} openOnClick>
+        <button className="title-history-provider" type="button">{source}</button>
+      </Tooltip>
+      : <details className="title-history-provider-details"><summary>{source}</summary><bdi>{details}</bdi></details>}
+    {row.previousTitle === null && <span>{t('first')}</span>}
+    {unchanged && <span>{t('unchanged')}</span>}
+    {row.inherited && <span>{t('inherited')}</span>}
+    <time dateTime={new Date(row.time).toISOString()}>{dates.format(row.time)}</time>
+  </div>
+}
+
+function HistoryGroup({ group, dates, t, ui }: {
+  group: TitleHistoryGroup
+  dates: Intl.DateTimeFormat
+  t: Translation
+  ui: Partial<Primitives>
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const repeatsId = useId()
+  const { revision, unchanged } = group
+  const { Button, Tooltip, IconChevronDownOutlineRegular: Chevron } = ui
+  const disclosureLabel = t(expanded ? 'hideUnchanged' : 'showUnchanged', { count: unchanged.length })
+  const disclosure = {
+    type: 'button' as const,
+    className: 'title-history-disclosure',
+    'aria-label': disclosureLabel,
+    'aria-expanded': expanded,
+    'aria-controls': repeatsId,
+    onClick: () => setExpanded(!expanded),
+  }
+  const icon = Chevron ? <Chevron size={14} /> : <span aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
+  return <li className="title-history-group">
+    <div className="title-history-heading">
+      <p className="title-history-title" dir="auto">{revision.title}</p>
+      {unchanged.length > 0 && (Button
+        ? <Button {...disclosure} size="sm" variant="ghost" icon={icon} />
+        : <button {...disclosure} title={disclosureLabel}>{icon}</button>)}
+    </div>
+    <RevisionMeta row={revision} dates={dates} t={t} Tooltip={Tooltip} />
+    {unchanged.length > 0 && <ol id={repeatsId} className="title-history-repeats" role="list" hidden={!expanded}>
+      {expanded && unchanged.map(row => <li key={row.seq}>
+        <RevisionMeta row={row} dates={dates} t={t} Tooltip={Tooltip} unchanged />
+      </li>)}
+    </ol>}
+  </li>
+}
+
+function HistoryList({ rows, t, language, ui }: {
   rows: TitleRevision[]
   t: Translation
   language: string
-  Tag?: Primitives['Tag']
+  ui: Partial<Primitives>
 }) {
   const dates = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'medium' })
-  return <ol role="list">{rows.map(row => {
-    const source = row.source.kind === 'user' ? t('manual') : t(row.source.kind)
-    const details = row.source.kind === 'provider'
-      ? row.source.model ? `${row.source.provider} · ${row.source.model.provider}/${row.source.model.model}` : row.source.provider
-      : undefined
-    return <li key={row.seq}>
-      <div className="title-history-meta">
-        {Tag ? <Tag className="title-history-source-label" tone="neutral">{source}</Tag> : <span>{source}</span>}
-        <time dateTime={new Date(row.time).toISOString()}>{dates.format(row.time)}</time>
-        {details !== undefined && <bdi className="title-history-source">{details}</bdi>}
-      </div>
-      <p><strong dir="auto">{row.title}</strong></p>
-      {row.previousTitle !== null && row.previousTitle !== row.title && <p className="title-history-previous">
-        {t('previous')} <bdi>{row.previousTitle}</bdi>
-      </p>}
-      <div className="title-history-notes">
-        {row.previousTitle === null && <span>{t('first')}</span>}
-        {row.previousTitle === row.title && <span>{t('unchanged')}</span>}
-        {row.inherited && <span>{t('inherited')}</span>}
-      </div>
-    </li>
-  })}</ol>
+  return <ol className="title-history-list" role="list">{groupTitleHistory(rows).map(group =>
+    <HistoryGroup key={group.revision.seq} group={group} dates={dates} t={t} ui={ui} />
+  )}</ol>
 }
 
-function HistoryContent({ target, t, language, Button, Tag }: {
+function HistoryContent({ target, t, language, ui }: {
   target: Target
   t: Translation
   language: string
-  Button?: Primitives['Button']
-  Tag?: Primitives['Tag']
+  ui: Partial<Primitives>
 }) {
+  const { Button } = ui
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const region = useRef<HTMLDivElement>(null)
@@ -174,7 +243,6 @@ function HistoryContent({ target, t, language, Button, Tag }: {
     setAttempt(attempt + 1)
   }
   return <div ref={region} className="title-history-content" role="region" aria-label={t('history')} tabIndex={0}>
-    {target.displayTitle && <p dir="auto">{target.displayTitle}</p>}
     <div role="status">
       {state.status === 'loading' && <p>{t('loading')}</p>}
       {state.status === 'loaded' && state.rows.length === 0 && <p>{t('empty')}</p>}
@@ -184,13 +252,14 @@ function HistoryContent({ target, t, language, Button, Tag }: {
       {Button ? <Button variant="outline" onClick={retry}>{t('retry')}</Button>
         : <button type="button" onClick={retry}>{t('retry')}</button>}
     </>}
-    {state.status === 'loaded' && state.rows.length > 0 && <HistoryList rows={state.rows} t={t} language={language} Tag={Tag} />}
+    {state.status === 'loaded' && state.rows.length > 0 && <HistoryList rows={state.rows} t={t} language={language} ui={ui} />}
   </div>
 }
 
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.locale.register(ID, labels), `${ID}: locale`)
-  const { Modal, Button, Tag, IconClockOutlineRegular } = nativePrimitives()
+  const ui = nativePrimitives()
+  const { Modal, IconClockOutlineRegular } = ui
   const menuLabel = ctx.locale.bind(ID)
   let target: Target | null = null
   const listeners = new Set<() => void>()
@@ -237,9 +306,9 @@ export function apply(ctx: Context): void {
     const selected = useSyncExternalStore(subscribe, getTarget)
     if (!selected) return <style>{css}</style>
     const content = <HistoryContent key={selected.sessionId} target={selected} t={t} language={ctx.locale.getLocale().active}
-      Button={Button} Tag={Tag} />
+      ui={ui} />
     return <><style>{css}</style>{Modal
-      ? <Modal open onClose={close} title={t('history')} closeLabel={t('close')}>{content}</Modal>
+      ? <Modal open className="title-history-modal" contentClassName="title-history-modal-content" onClose={close} title={t('history')} closeLabel={t('close')}>{content}</Modal>
       : <BrowserModal onClose={close} title={t('history')} closeLabel={t('close')}>{content}</BrowserModal>}
     </>
   }
