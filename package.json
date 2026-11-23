@@ -1,7 +1,6 @@
 {
   "name": "@miorin/dsh-session-title-history",
   "version": "0.1.0",
-  "private": true,
   "license": "MIT",
   "description": "See when each session title was generated or edited.",
   "type": "module",
@@ -79,5 +78,8 @@
     "esbuild": "0.28.2",
     "react": "18.3.1",
     "typescript": "5.7.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
