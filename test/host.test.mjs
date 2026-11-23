@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { apply } from '../index.js'
+import { apply, inject } from '../index.js'
 import { groupTitleHistory, HISTORY_PATH, titleHistory } from '../lib/history.js'
 
 const user = { kind: 'user' }
@@ -41,15 +41,18 @@ test('groups adjacent same-title writes without merging distinct revisions that 
   assert.deepEqual(groupTitleHistory([]), [])
 })
 
-test('reads exactly one session, rejects missing input, and releases the observation and route', async () => {
+test('reads exactly one session, rejects missing input, and releases the observation, tool, and route', async () => {
   const disposers = []
   let route
+  let tool
   let reads = 0
   let released = 0
   let readSignal
   apply({
     effect: effect => disposers.push(effect()),
     connection: { fetch: { register(next) { route = next; return () => { route = undefined } } } },
+    sessionController: {},
+    tools: { register(definition) { tool = definition; return () => { tool = undefined } } },
     sessionQuery: {
       observeSession(id, options) {
         reads++
@@ -61,6 +64,8 @@ test('reads exactly one session, rejects missing input, and releases the observa
       },
     },
   })
+  assert.deepEqual(inject, ['connection', 'sessionQuery', 'sessionController', 'tools'])
+  assert.equal(tool.name, 'session_title_history')
   assert.equal(route.path, HISTORY_PATH)
   assert.deepEqual(route.methods, ['GET'])
   const get = query => route.fetch(new Request(`http://localhost${HISTORY_PATH}?${query}`))
@@ -74,5 +79,6 @@ test('reads exactly one session, rejects missing input, and releases the observa
   assert.equal(released, 1)
   for (const dispose of disposers.reverse()) dispose()
   assert.equal(route, undefined)
+  assert.equal(tool, undefined)
   assert.equal(readSignal.aborted, true)
 })

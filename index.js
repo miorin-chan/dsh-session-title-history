@@ -2,11 +2,16 @@
 
 // src/host/index.ts
 import { HISTORY_PATH, titleHistory } from "./lib/history.js";
-var inject = ["connection", "sessionQuery"];
+import { titleHistoryTool } from "./lib/tool.js";
+var inject = ["connection", "sessionQuery", "sessionController", "tools"];
 var headers = { "Cache-Control": "no-store" };
 function apply(ctx) {
   const lifetime = new AbortController();
   ctx.effect(() => () => lifetime.abort());
+  ctx.effect(() => ctx.tools.register(titleHistoryTool({
+    sessionQuery: ctx.sessionQuery,
+    sessionController: ctx.sessionController
+  })), "session-title-history: title tool");
   ctx.effect(() => ctx.connection.fetch.register({
     path: HISTORY_PATH,
     methods: ["GET"],

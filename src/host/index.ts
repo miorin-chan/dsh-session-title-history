@@ -1,16 +1,24 @@
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-api-session-controller'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-session-query'
+import type {} from '@deepseek-ai/dsh-tools'
 import { HISTORY_PATH, titleHistory } from '../lib/history.js'
+import { titleHistoryTool } from '../lib/tool.js'
 
-export const inject = ['connection', 'sessionQuery']
+export const inject = ['connection', 'sessionQuery', 'sessionController', 'tools']
 
 const headers = { 'Cache-Control': 'no-store' }
 
 export function apply(ctx: Context): void {
   const lifetime = new AbortController()
   ctx.effect(() => () => lifetime.abort())
+  // The dialog's restore button and the agent tool are two callers of one rename implementation.
+  ctx.effect(() => ctx.tools.register(titleHistoryTool({
+    sessionQuery: ctx.sessionQuery,
+    sessionController: ctx.sessionController,
+  })), 'session-title-history: title tool')
   ctx.effect(() => ctx.connection.fetch.register({
     path: HISTORY_PATH,
     methods: ['GET'],
