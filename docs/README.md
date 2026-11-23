@@ -45,5 +45,5 @@ npm run check
 npm pack --dry-run
 ```
 
-从工作区根目录运行 `node tools/new-dsh-plugin/cli.mjs --check plugins/dsh-session-title-history`。
+从工作区根目录运行 `node tools/new-dsh-plugin/cli.mts --check plugins/dsh-session-title-history`。
 升级 DSH 后重新核对会话日志字段、菜单入口、弹窗、分叉标记、独立开关、重命名接口与 `session/rename` 权限判定。

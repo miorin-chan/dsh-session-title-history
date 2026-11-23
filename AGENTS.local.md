@@ -89,7 +89,7 @@ Update `CHANGELOG.md` when releasing.
 
 - In a fresh checkout, run `npm ci` in the project directory to install locked dependencies and build.
   After editing source, run `npm run build` to refresh the runtime files before `npm run check`.
-- From the workspace root, run `node tools/new-dsh-plugin/cli.mjs --check plugins/<id>` to check the manifest,
+- From the workspace root, run `node tools/new-dsh-plugin/cli.mts --check plugins/<id>` to check the manifest,
   locale JSON, and the other scaffold files.
 - Use a disposable profile for installation tests.
   Distinguish fixture results from observations in the UI.
