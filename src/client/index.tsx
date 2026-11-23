@@ -29,6 +29,13 @@ type ModalProps = {
 }
 
 const css = `
+  /* DSH 0.2.2-rc.5 renders Copy session ID with its own separator. Suppress
+     it only when the History row immediately precedes that native copy row. */
+  [data-context-menu] [role="presentation"]
+    > :has(> [role="menuitem"] .title-history-menu-clock)
+    + [role="separator"]:has(+ * > [role="menuitem"] [data-icon="dsw-icon-copy-outline-regular"]) {
+    display: none;
+  }
   .title-history-dialog {
     color: var(--dsw-alias-label-primary, CanvasText); background: var(--dsw-alias-bg-overlay, Canvas);
     border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px;
@@ -196,20 +203,33 @@ export function apply(ctx: Context): void {
     target = next
     for (const listener of listeners) listener()
   }
-  const close = () => setTarget(null)
-  let openFrame: number | undefined
-  const cancelOpen = () => {
-    if (openFrame === undefined) return
-    cancelAnimationFrame(openFrame)
-    openFrame = undefined
+  let transitionFrame: number | undefined
+  let returnFocus: HTMLElement | undefined
+  const cancelTransition = () => {
+    if (transitionFrame === undefined) return
+    cancelAnimationFrame(transitionFrame)
+    transitionFrame = undefined
   }
-  ctx.effect(() => cancelOpen, `${ID}: menu focus handoff`)
+  ctx.effect(() => cancelTransition, `${ID}: menu focus handoff`)
   const open = (selected: Target) => {
-    cancelOpen()
-    // Let the native menu restore its trigger before Modal captures return focus.
-    openFrame = requestAnimationFrame(() => {
-      openFrame = undefined
+    cancelTransition()
+    // Let the native menu return focus to the trigger before opening the dialog.
+    transitionFrame = requestAnimationFrame(() => {
+      transitionFrame = undefined
+      const focused = document.activeElement
+      returnFocus = focused instanceof HTMLElement && focused !== document.body ? focused : undefined
       setTarget(selected)
+    })
+  }
+  const close = () => {
+    cancelTransition()
+    setTarget(null)
+    const trigger = returnFocus
+    returnFocus = undefined
+    if (trigger === undefined) return
+    transitionFrame = requestAnimationFrame(() => {
+      transitionFrame = undefined
+      if (trigger.isConnected && document.activeElement === document.body) trigger.focus({ preventScroll: true })
     })
   }
 
@@ -227,7 +247,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.slots.inject(OVERLAY, () => ctx.slots.register({ name: OVERLAY, id: ID, locale: ID }, HistoryOverlay)), `${ID}: overlay`)
   if (IconClockOutlineRegular) {
     ctx.effect(() => ctx.slots.inject(MENU_ICON, () => ctx.slots.register({ name: MENU_ICON, key: ID },
-      () => <IconClockOutlineRegular aria-hidden="true" />)), `${ID}: menu icon`)
+      () => <IconClockOutlineRegular className="title-history-menu-clock" aria-hidden="true" />)), `${ID}: menu icon`)
   }
   ctx.effect(() => ctx.contextMenus.register({
     id: ID,
@@ -238,7 +258,7 @@ export function apply(ctx: Context): void {
     resolve: selected => [{
       id: 'open',
       label: menuLabel('history'),
-      ...(IconClockOutlineRegular ? { icon: { key: ID } } : {}),
+      ...(IconClockOutlineRegular ? { icon: { key: ID }, separatorBefore: true } : {}),
       run: () => open(selected),
     }],
   }), `${ID}: menu action`)

@@ -171,6 +171,13 @@ var MENU_ICON = "contextMenu.icon";
 var OVERLAY = "shell.overlay";
 var inject = ["locale", "slots", "contextMenus"];
 var css = `
+  /* DSH 0.2.2-rc.5 renders Copy session ID with its own separator. Suppress
+     it only when the History row immediately precedes that native copy row. */
+  [data-context-menu] [role="presentation"]
+    > :has(> [role="menuitem"] .title-history-menu-clock)
+    + [role="separator"]:has(+ * > [role="menuitem"] [data-icon="dsw-icon-copy-outline-regular"]) {
+    display: none;
+  }
   .title-history-dialog {
     color: var(--dsw-alias-label-primary, CanvasText); background: var(--dsw-alias-bg-overlay, Canvas);
     border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px;
@@ -326,19 +333,32 @@ function apply(ctx) {
     target = next;
     for (const listener of listeners) listener();
   };
-  const close = () => setTarget(null);
-  let openFrame;
-  const cancelOpen = () => {
-    if (openFrame === void 0) return;
-    cancelAnimationFrame(openFrame);
-    openFrame = void 0;
+  let transitionFrame;
+  let returnFocus;
+  const cancelTransition = () => {
+    if (transitionFrame === void 0) return;
+    cancelAnimationFrame(transitionFrame);
+    transitionFrame = void 0;
   };
-  ctx.effect(() => cancelOpen, `${ID}: menu focus handoff`);
+  ctx.effect(() => cancelTransition, `${ID}: menu focus handoff`);
   const open = (selected) => {
-    cancelOpen();
-    openFrame = requestAnimationFrame(() => {
-      openFrame = void 0;
+    cancelTransition();
+    transitionFrame = requestAnimationFrame(() => {
+      transitionFrame = void 0;
+      const focused = document.activeElement;
+      returnFocus = focused instanceof HTMLElement && focused !== document.body ? focused : void 0;
       setTarget(selected);
+    });
+  };
+  const close = () => {
+    cancelTransition();
+    setTarget(null);
+    const trigger = returnFocus;
+    returnFocus = void 0;
+    if (trigger === void 0) return;
+    transitionFrame = requestAnimationFrame(() => {
+      transitionFrame = void 0;
+      if (trigger.isConnected && document.activeElement === document.body) trigger.focus({ preventScroll: true });
     });
   };
   function HistoryOverlay({ t }) {
@@ -364,7 +384,7 @@ function apply(ctx) {
   if (IconClockOutlineRegular) {
     ctx.effect(() => ctx.slots.inject(MENU_ICON, () => ctx.slots.register(
       { name: MENU_ICON, key: ID },
-      () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconClockOutlineRegular, { "aria-hidden": "true" })
+      () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconClockOutlineRegular, { className: "title-history-menu-clock", "aria-hidden": "true" })
     )), `${ID}: menu icon`);
   }
   ctx.effect(() => ctx.contextMenus.register({
@@ -376,7 +396,7 @@ function apply(ctx) {
     resolve: (selected) => [{
       id: "open",
       label: menuLabel("history"),
-      ...IconClockOutlineRegular ? { icon: { key: ID } } : {},
+      ...IconClockOutlineRegular ? { icon: { key: ID }, separatorBefore: true } : {},
       run: () => open(selected)
     }]
   }), `${ID}: menu action`);

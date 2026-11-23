@@ -56,7 +56,7 @@ test('registers one native session action with a keyed icon and disposes its res
   assert.equal(contribution.order, 449)
   assert.deepEqual(contribution.observe(), [locale])
   const [{ run, ...action }] = contribution.resolve({ sessionId: 'session-one', displayTitle: 'Example' })
-  assert.deepEqual(action, { id: 'open', label: 'Title history', icon: { key: id } })
+  assert.deepEqual(action, { id: 'open', label: 'Title history', icon: { key: id }, separatorBefore: true })
   assert.equal(typeof run, 'function')
   assert.deepEqual(Object.keys(dictionaries).sort(), ['de', 'en', 'es', 'fr', 'ja', 'pt', 'ru', 'zh'])
   for (const copy of Object.values(dictionaries)) assert.deepEqual(Object.keys(copy), Object.keys(dictionaries.en))
