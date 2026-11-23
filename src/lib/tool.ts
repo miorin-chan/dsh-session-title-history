@@ -1,11 +1,10 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-session-controller'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-session-query'
 import type { SessionTitleSource } from '@deepseek-ai/dsh-session-title'
 import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
-import { groupTitleHistory, titleHistory } from './history.js'
-import type { TitleHistoryGroup } from './history.js'
+import { displayTitleOf, groupTitleHistory, HistoryEditError, isTitleSequence } from './history.js'
+import type { TitleEdit, TitleHistory, TitleHistoryGroup } from './history.js'
 
 export const TOOL_NAME = 'session_title_history'
 
@@ -14,7 +13,7 @@ export const LIST_LIMIT = 50
 
 /** The Host services the tool needs, as structural picks so tests supply plain objects. */
 export interface TitleHistoryToolServices {
-  readonly sessionQuery: Pick<Context['sessionQuery'], 'observeSession'>
+  readonly history: TitleHistory
   /** The same Host method the session menu's rename reaches through the Remote entry. */
   readonly sessionController: Pick<Context['sessionController'], 'rename'>
 }
@@ -28,6 +27,7 @@ export interface TitleEntry {
   readonly inherited: boolean
   /** Later writes that kept this title. */
   readonly repeats: number
+  readonly edited?: true
 }
 
 /** A refused call: the reason names the outcome and the message tells the model what to do next. */
@@ -57,11 +57,19 @@ export type ToolValue =
     readonly title: string
     readonly seq: number
   }
+  | {
+    readonly ok: true
+    readonly action: 'edit'
+    readonly sessionId: string
+    readonly title: string
+    readonly seq: number
+  }
   | ToolFailure
 
 type ToolArgs =
   | { readonly action: 'list'; readonly sessionId?: string }
   | { readonly action: 'restore'; readonly title: string; readonly sessionId?: string }
+  | ({ readonly action: 'edit'; readonly sessionId?: string } & TitleEdit)
 
 type ParsedArgs = { readonly args: ToolArgs } | { readonly failure: ToolFailure }
 
@@ -82,11 +90,25 @@ export function parseArgs(value: unknown): ParsedArgs {
     sessionId = value.sessionId
   }
   if (action === 'list') return { args: { action, sessionId } }
-  if (action !== 'restore') return { failure: failure('invalid-arguments', 'action must be "list" or "restore".') }
+  if (action === 'edit') {
+    if (!isTitleSequence(value.seq) || typeof title !== 'string') {
+      return { failure: failure('invalid-arguments', 'edit needs the seq of a past title from "list" and the new title text.') }
+    }
+    return { args: { action, sessionId, seq: value.seq, title } }
+  }
+  if (action !== 'restore') return { failure: failure('invalid-arguments', 'action must be "list", "restore", or "edit".') }
   if (typeof title !== 'string' || title.trim() === '') {
     return { failure: failure('invalid-arguments', 'restore needs title: the exact text of a past title from action "list".') }
   }
   return { args: { action, title, sessionId } }
+}
+
+function historyFailure(error: unknown, sessionId: string, operation: 'read' | 'edit'): ToolFailure {
+  if (error instanceof HistoryEditError) return failure(error.reason, error.message)
+  if (isRecord(error) && error.code === 'SESSION_QUERY_SESSION_NOT_FOUND') {
+    return failure('session-not-found', `Session ${sessionId} was not found.`)
+  }
+  return failure('history-unavailable', `Could not ${operation} the title history of session ${sessionId}.`)
 }
 
 type TitleGroups = readonly TitleHistoryGroup[]
@@ -96,32 +118,22 @@ async function readHistory(services: TitleHistoryToolServices, sessionId: string
   { readonly groups: TitleGroups } | { readonly failure: ToolFailure }
 > {
   try {
-    const observed = await services.sessionQuery.observeSession(sessionId as SessionId, { signal, projectionMode: 'none' })
-    try {
-      signal.throwIfAborted()
-      return { groups: groupTitleHistory(titleHistory(observed.events, observed.inheritedEventCount)) }
-    } finally {
-      observed[Symbol.dispose]()
-    }
+    return { groups: groupTitleHistory(await services.history.read(sessionId as SessionId, signal)) }
   } catch (error) {
     // Cancellation belongs to the executor's canonical aborted result.
     if (signal.aborted) throw error
-    const missing = isRecord(error) && error.code === 'SESSION_QUERY_SESSION_NOT_FOUND'
-    return {
-      failure: missing
-        ? failure('session-not-found', `Session ${sessionId} was not found.`)
-        : failure('history-unavailable', `Could not read the title history of session ${sessionId}.`),
-    }
+    return { failure: historyFailure(error, sessionId, 'read') }
   }
 }
 
 const entryOf = ({ revision, unchanged }: TitleHistoryGroup): TitleEntry => ({
-  title: revision.title,
+  title: displayTitleOf(revision),
   seq: revision.seq,
   time: revision.time,
   source: revision.source.kind,
   inherited: revision.inherited,
   repeats: unchanged.length,
+  ...(revision.editedTitle === undefined ? {} : { edited: true }),
 })
 
 const isEntry = (value: unknown): value is TitleEntry =>
@@ -140,10 +152,14 @@ export function render(_args: unknown, value: unknown): { type: 'text'; text: st
   if (value.action === 'restore') {
     return [{ type: 'text', text: `Session title restored to “${String(value.title)}”; it was “${String(value.previousTitle)}”.` }]
   }
+  if (value.action === 'edit') {
+    return [{ type: 'text', text: `History entry ${String(value.seq)} saved as “${String(value.title)}”.` }]
+  }
   const entries = Array.isArray(value.titles) ? value.titles.filter(isEntry) : []
   if (entries.length === 0) return [{ type: 'text', text: `Session ${String(value.sessionId)} has no title history.` }]
   const lines = entries.map((entry, index) => {
     const notes = [index === 0 ? 'current' : sourceLabel(entry)]
+    if (entry.edited) notes.push('edited in history')
     if (entry.inherited) notes.push('inherited from the parent session')
     if (entry.repeats > 0) notes.push(`written ${entry.repeats + 1} times`)
     return `${index + 1}. “${String(entry.title)}” — ${notes.join(', ')}`
@@ -163,6 +179,7 @@ const entrySchema: JsonSchemaNode = {
     source: { type: 'string', enum: ['user', 'provider', 'fallback'] },
     inherited: { type: 'boolean' },
     repeats: { type: 'integer' },
+    edited: { type: 'boolean', const: true },
   },
 }
 
@@ -175,8 +192,8 @@ export function titleHistoryTool(services: TitleHistoryToolServices): ToolDefini
   return {
     name: TOOL_NAME,
     description: [
-      'A session’s title history: every title it had, newest first, and a way to make a past title the current one again.',
-      'Restoring re-applies the title exactly as the session menu’s Title history does, and records a manual edit.',
+      'List a session’s title history, restore a past title as the current one, or edit the text of a historical entry.',
+      'Editing changes the history entry. Restoring records a new current title.',
     ].join(' '),
     parameters: {
       type: 'object',
@@ -185,12 +202,16 @@ export function titleHistoryTool(services: TitleHistoryToolServices): ToolDefini
       properties: {
         action: {
           type: 'string',
-          enum: ['list', 'restore'],
-          description: '`list` returns the history; `restore` makes `title` the current title.',
+          enum: ['list', 'restore', 'edit'],
+          description: '`list` returns the history, `restore` sets the current title, and `edit` saves the new text for a past title.',
         },
         title: {
           type: 'string',
-          description: '`restore` only: the exact text of a past title from `list`.',
+          description: 'The exact text from `list` for `restore`, or the new text for `edit`.',
+        },
+        seq: {
+          type: 'integer',
+          description: 'Sequence number of the past title from `list`, required for `edit`.',
         },
         sessionId: {
           type: 'string',
@@ -230,6 +251,18 @@ export function titleHistoryTool(services: TitleHistoryToolServices): ToolDefini
           {
             type: 'object',
             additionalProperties: false,
+            required: ['ok', 'action', 'sessionId', 'title', 'seq'],
+            properties: {
+              ok: { type: 'boolean', const: true },
+              action: { type: 'string', const: 'edit' },
+              sessionId: { type: 'string' },
+              title: { type: 'string' },
+              seq: { type: 'integer' },
+            },
+          },
+          {
+            type: 'object',
+            additionalProperties: false,
             required: ['ok', 'reason', 'message'],
             properties: {
               ok: { type: 'boolean', const: false },
@@ -245,9 +278,11 @@ export function titleHistoryTool(services: TitleHistoryToolServices): ToolDefini
     presentCall(args: unknown) {
       const parsed = parseArgs(args)
       if ('failure' in parsed) return undefined
-      return parsed.args.action === 'restore'
-        ? { card: 'generic', title: 'Restore session title', kind: 'edit', rawInput: parsed.args.title }
-        : { card: 'generic', title: 'Session title history', kind: 'read' }
+      if (parsed.args.action === 'list') return { card: 'generic', title: 'Session title history', kind: 'read' }
+      return {
+        card: 'generic', kind: 'edit', rawInput: parsed.args.title,
+        title: parsed.args.action === 'restore' ? 'Restore session title' : 'Edit past session title',
+      }
     },
     async execute(args: unknown, exec: ToolRunContext): Promise<ToolValue> {
       const parsed = parseArgs(args)
@@ -256,6 +291,15 @@ export function titleHistoryTool(services: TitleHistoryToolServices): ToolDefini
       const target = given ?? exec.agent?.session.header.id
       if (target === undefined) {
         return failure('no-session', 'No session to act on: pass sessionId when calling outside a session.')
+      }
+      if (action === 'edit') {
+        try {
+          const title = await services.history.edit(target as SessionId, parsed.args, exec.signal)
+          return { ok: true, action, sessionId: target, title, seq: parsed.args.seq }
+        } catch (error) {
+          if (exec.signal.aborted) throw error
+          return historyFailure(error, target, 'edit')
+        }
       }
       const history = await readHistory(services, target, exec.signal)
       if ('failure' in history) return history.failure
@@ -271,13 +315,13 @@ export function titleHistoryTool(services: TitleHistoryToolServices): ToolDefini
         }
       }
       const wanted = parsed.args.title.trim()
-      const group = groups.find(({ revision }) => revision.title === wanted)
+      const group = groups.find(({ revision }) => displayTitleOf(revision) === wanted)
       if (group === undefined) {
         return failure('unknown-title', `“${wanted}” is not a title this session had. Use action "list" to see its titles.`)
       }
       if (group === groups[0]) return failure('already-current', `“${wanted}” is already the current title.`)
       try {
-        const accepted = await services.sessionController.rename({ sessionId: target as SessionId, title: group.revision.title })
+        const accepted = await services.sessionController.rename({ sessionId: target as SessionId, title: displayTitleOf(group.revision) })
         return {
           ok: true,
           action,

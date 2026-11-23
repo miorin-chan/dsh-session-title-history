@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { assertSupportedJsonSchema, validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
 import { LIST_LIMIT, parseArgs, render, titleHistoryTool, TOOL_NAME } from '../lib/tool.js'
+import { createHistory } from '../lib/history.js'
 
 const user = { kind: 'user' }
 const provider = { kind: 'provider', provider: 'title-provider', model: { provider: 'fixture', model: 'model' } }
@@ -18,21 +19,27 @@ const events = [
 /** Host services recording what the tool calls, plus one tool built over them. */
 function fixture({ rows = events, inheritedEventCount = 4, missing = false, rename } = {}) {
   const calls = { renamed: [], disposed: 0, reads: [] }
-  const services = {
-    sessionQuery: {
+  const edits = new Map()
+  const history = createHistory({
     async observeSession(sessionId, options) {
       calls.reads.push({ sessionId, options })
       if (missing) throw Object.assign(new Error('Missing'), { code: 'SESSION_QUERY_SESSION_NOT_FOUND' })
       return { events: rows, inheritedEventCount, [Symbol.dispose]() { calls.disposed++ } }
     },
-    },
+  }, {
+    get: key => edits.get(key),
+    async put(key, value) { edits.set(key, value) },
+    async delete(key) { return edits.delete(key) },
+  })
+  const services = {
+    history,
     sessionController: {
-    async rename(request) {
-      calls.renamed.push(request)
-      if (typeof rename === 'function') return rename(request)
-      if (rename !== undefined) throw rename
-      return { title: request.title.trim(), seq: 9 }
-    },
+      async rename(request) {
+        calls.renamed.push(request)
+        if (typeof rename === 'function') return rename(request)
+        if (rename !== undefined) throw rename
+        return { title: request.title.trim(), seq: 9 }
+      },
     },
   }
   return { calls, tool: titleHistoryTool(services) }
@@ -56,7 +63,7 @@ test('declares a compact tool whose schemas are within the supported JSON Schema
   assert.equal(tool.parameters.type, 'object')
   assert.equal(tool.parameters.additionalProperties, false)
   assert.deepEqual(tool.parameters.required, ['action'])
-  assert.deepEqual(Object.keys(tool.parameters.properties).sort(), ['action', 'sessionId', 'title'])
+  assert.deepEqual(Object.keys(tool.parameters.properties).sort(), ['action', 'seq', 'sessionId', 'title'])
   const definition = JSON.stringify({ name: tool.name, description: tool.description, parameters: tool.parameters })
   assert.ok(definition.length < 1600, `definition is ${definition.length} characters`)
 })
@@ -65,9 +72,13 @@ test('validates arguments before any Host work', () => {
   assert.deepEqual(parseArgs({ action: 'list' }), { args: { action: 'list', sessionId: undefined } })
   assert.deepEqual(parseArgs({ action: 'restore', title: 'Alpha', sessionId: 'session-two' }),
     { args: { action: 'restore', title: 'Alpha', sessionId: 'session-two' } })
+  assert.deepEqual(parseArgs({ action: 'edit', seq: 0, title: 'Revised' }),
+    { args: { action: 'edit', seq: 0, title: 'Revised', sessionId: undefined } })
   for (const [args, message] of [
     ['list', 'Arguments must be an object.'],
-    [{ action: 'erase' }, 'action must be "list" or "restore".'],
+    [{ action: 'erase' }, 'action must be "list", "restore", or "edit".'],
+    [{ action: 'edit', seq: 1.5, title: 'Revised' }, 'edit needs the seq of a past title from "list" and the new title text.'],
+    [{ action: 'edit', seq: 3 }, 'edit needs the seq of a past title from "list" and the new title text.'],
     [{ action: 'restore' }, 'restore needs title: the exact text of a past title from action "list".'],
     [{ action: 'restore', title: '  ' }, 'restore needs title: the exact text of a past title from action "list".'],
     [{ action: 'list', sessionId: '' }, 'sessionId must be a non-empty string when given.'],
@@ -155,6 +166,26 @@ test('restore refuses titles the session never had and the title it already has'
     ok: false, reason: 'already-current', message: '“Renamed” is already the current title.',
   })
   assert.equal(calls.renamed.length, 0, 'a refusal never reaches the rename')
+})
+
+test('edit replaces just the selected past entry and restore accepts its displayed title', async () => {
+  const { tool, calls } = fixture()
+  const saved = await valueOf(tool, { action: 'edit', seq: 3, title: 'Initial' })
+  assert.deepEqual(saved, { ok: true, action: 'edit', sessionId: 'session-one', seq: 3, title: 'Initial' })
+  const listed = await valueOf(tool, { action: 'list' })
+  assert.equal(listed.current, 'Renamed')
+  assert.deepEqual(listed.titles.map(({ title, seq, edited }) => ({ title, seq, edited })), [
+    { title: 'Renamed', seq: 4, edited: undefined },
+    { title: 'Initial', seq: 3, edited: true },
+    { title: 'Initial', seq: 1, edited: undefined },
+  ])
+  assert.equal(calls.renamed.length, 0)
+  assert.equal((await valueOf(tool, { action: 'edit', seq: 3, title: ' ' })).reason, 'title-invalid')
+  assert.equal((await valueOf(tool, { action: 'edit', seq: 4, title: 'New current' })).reason, 'past-title-not-found')
+  assert.deepEqual((await valueOf(tool, { action: 'list' })).titles, listed.titles)
+  const restored = await valueOf(tool, { action: 'restore', title: 'Initial' })
+  assert.equal(restored.title, 'Initial')
+  assert.deepEqual(calls.renamed, [{ sessionId: 'session-one', title: 'Initial' }])
 })
 
 test('a refused rename reports the Host reason and code', async () => {

@@ -8,8 +8,8 @@ import type { ContextMenuTargetMap } from '@deepseek-ai/dsh-client-ui-context-me
 import type { GlobalStandardProps, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
-import { groupTitleHistory, HISTORY_PATH } from '../lib/history.js'
-import type { TitleHistoryGroup, TitleRevision } from '../lib/history.js'
+import { displayTitleOf, groupTitleHistory, HISTORY_PATH, isTitleSequence } from '../lib/history.js'
+import type { TitleEdit, TitleHistoryGroup, TitleRevision } from '../lib/history.js'
 import { labels } from './locale.js'
 import { reapplyTitle } from './rename.js'
 
@@ -25,15 +25,22 @@ type Translation = PropsLocale<typeof ID>['t']
 type Target = ContextMenuTargetMap['session']
 type AccessProps = Pick<GlobalStandardProps, 'useSessionAccess'>
 type Primitives = Pick<typeof import('@deepseek-ai/dsh-client-ui-primitives'),
-  'Modal' | 'Button' | 'Tooltip' | 'Tag' | 'IconClockOutlineRegular' | 'IconRightUpOutlineRegular'>
-type LoadState = { status: 'loading' | 'failed' } | { status: 'loaded'; rows: TitleRevision[] }
-type RenameState =
+  'Modal' | 'Button' | 'Input' | 'Tooltip' | 'Tag' | 'IconClockOutlineRegular' | 'IconEditOutlineRegular' | 'IconRightUpOutlineRegular'>
+type LoadedHistory = { rows: TitleRevision[]; canEdit: boolean }
+type LoadState = { status: 'loading' | 'failed' } | ({ status: 'loaded' } & LoadedHistory)
+type Notice =
   | { status: 'idle' }
   | { status: 'pending'; title: string }
   | { status: 'restored'; title: string }
+  | { status: 'edited'; seq: number }
   | { status: 'failed'; message: string }
-/** One past title's re-apply action, present only where the Peer may rename. */
-type Restore = { pending: boolean; run: () => void }
+type EditResult = { ok: true; title: string } | { ok: false; label: 'editFailed' | 'invalidTitle' | 'pastTitleMissing' }
+type HistoryActions = {
+  restore: (group: TitleHistoryGroup) => void
+  startEdit: (seq: number) => void
+  finishEdit: (seq: number) => void
+  saveEdit: (edit: TitleEdit, signal: AbortSignal) => Promise<EditResult>
+}
 type ModalProps = {
   title: string
   closeLabel: string
@@ -88,23 +95,34 @@ const css = `
     outline-offset: -2px;
   }
   .title-history-count { flex: none; }
-  .title-history-restore-fallback {
-    flex: none; width: 28px; height: 28px; margin-block: -3px; padding: 0; border: 0; border-radius: var(--dsw-radius-sm);
-    background: transparent; color: inherit; font: inherit; font-size: 14px; cursor: pointer;
+  .title-history-row-actions {
+    --title-history-action-size: 28px;
+    display: grid; grid-template-columns: repeat(2, var(--title-history-action-size)); gap: 2px;
   }
-  /* Square icon control, as the native row icon buttons (DSH 0.2.2-rc.5, dsh-client-ui-workspace .iconButton). */
-  .title-history-heading .title-history-restore {
-    flex: none; width: 28px; height: 28px; margin-block: -3px; padding: 0; border-radius: var(--dsw-radius-sm);
+  /* Square icon controls, as the native row icon buttons (DSH 0.2.2-rc.5, dsh-client-ui-workspace .iconButton). */
+  .title-history-heading .title-history-action {
+    width: var(--title-history-action-size); height: var(--title-history-action-size);
+    margin-block: -3px; padding: 0; border-radius: var(--dsw-radius-sm);
     color: var(--dsw-alias-label-secondary);
   }
+  .title-history-restore { grid-column: 2; }
+  .title-history-action-fallback { border: 0; background: transparent; font: inherit; cursor: pointer; }
   @media (hover: hover) {
-    .title-history-heading .title-history-restore:hover:not(:disabled) { color: var(--dsw-alias-label-primary); }
+    .title-history-heading .title-history-action:hover:not(:disabled) { color: var(--dsw-alias-label-primary); }
   }
   /* Touch gets a larger target without a tooltip to explain the glyph. */
   @media (any-pointer: coarse) {
-    .title-history-heading .title-history-restore { width: 36px; height: 36px; margin-block: -7px; }
+    .title-history-row-actions { --title-history-action-size: 36px; }
+    .title-history-heading .title-history-action { margin-block: -7px; }
   }
-  .title-history-restore:disabled, .title-history-restore-fallback:disabled { cursor: not-allowed; opacity: 0.4; }
+  .title-history-action:disabled { cursor: not-allowed; opacity: 0.4; }
+  .title-history-editor { display: grid; gap: 8px; margin-bottom: 8px; }
+  .title-history-editor-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+  .title-history-editor .title-history-notice { margin: 0; }
+  .title-history-input-fallback {
+    min-width: 0; padding: 6px 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-sm);
+    background: var(--dsw-alias-bg-base); color: inherit; font: inherit;
+  }
   .title-history-meta {
     display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px;
     margin-top: 4px; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary);
@@ -158,10 +176,10 @@ function BrowserModal({ title, closeLabel, onClose, children }: ModalProps) {
 
 function isRevision(value: unknown): value is TitleRevision {
   if (value === null || typeof value !== 'object') return false
-  const { seq, time, title, previousTitle, inherited, source } = value as Record<string, unknown>
-  if (typeof seq !== 'number' || !Number.isSafeInteger(seq) || seq < 0
-    || typeof time !== 'number' || !Number.isFinite(new Date(time).getTime())
+  const { seq, time, title, previousTitle, inherited, source, editedTitle } = value as Record<string, unknown>
+  if (!isTitleSequence(seq) || typeof time !== 'number' || !Number.isFinite(new Date(time).getTime())
     || typeof title !== 'string' || (previousTitle !== null && typeof previousTitle !== 'string')
+    || (editedTitle !== undefined && typeof editedTitle !== 'string')
     || typeof inherited !== 'boolean' || source === null || typeof source !== 'object' || !('kind' in source)) return false
   if (source.kind === 'user' || source.kind === 'fallback') return true
   if (source.kind !== 'provider' || !('provider' in source) || typeof source.provider !== 'string') return false
@@ -170,23 +188,48 @@ function isRevision(value: unknown): value is TitleRevision {
     && typeof source.model.provider === 'string' && 'model' in source.model && typeof source.model.model === 'string'
 }
 
-async function loadHistory(sessionId: SessionId, signal: AbortSignal): Promise<TitleRevision[]> {
+function historyUrl(sessionId: SessionId): URL {
   const url = new URL(HISTORY_PATH.slice(1), document.baseURI)
   url.searchParams.set('sessionId', sessionId)
-  const response = await fetch(url, { signal })
+  return url
+}
+
+async function loadHistory(sessionId: SessionId, signal: AbortSignal): Promise<LoadedHistory> {
+  const response = await fetch(historyUrl(sessionId), { signal })
   if (!response.ok) throw new Error(`Session title history request failed (${response.status})`)
   const data: unknown = await response.json()
   if (data === null || typeof data !== 'object' || !('history' in data) || !Array.isArray(data.history)
     || !data.history.every(isRevision)) throw new Error('Invalid session title history response')
-  return data.history
+  return { rows: data.history, canEdit: 'canEdit' in data && data.canEdit === true }
 }
 
-function RevisionMeta({ row, dates, t, Tooltip, unchanged = false }: {
+async function saveTitleEdit(sessionId: SessionId, edit: TitleEdit, signal: AbortSignal): Promise<EditResult> {
+  try {
+    const response = await fetch(historyUrl(sessionId), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(edit),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
+    })
+    const data: unknown = await response.json()
+    if (data !== null && typeof data === 'object') {
+      if (response.ok && 'title' in data && typeof data.title === 'string') return { ok: true, title: data.title }
+      if ('error' in data) {
+        if (data.error === 'title-invalid') return { ok: false, label: 'invalidTitle' }
+        if (data.error === 'past-title-not-found') return { ok: false, label: 'pastTitleMissing' }
+      }
+    }
+  } catch {
+    // A transport or parsing failure leaves the draft available for retry.
+  }
+  return { ok: false, label: 'editFailed' }
+}
+
+function RevisionMeta({ row, dates, t, Tooltip, unchanged = false, saved = false }: {
   row: TitleRevision
   dates: Intl.DateTimeFormat
   t: Translation
   Tooltip?: Primitives['Tooltip']
   unchanged?: boolean
+  saved?: boolean
 }) {
   const source = row.source.kind === 'user' ? t('manual') : t(row.source.kind)
   const details = row.source.kind === 'provider'
@@ -201,49 +244,145 @@ function RevisionMeta({ row, dates, t, Tooltip, unchanged = false }: {
     {row.previousTitle === null && <span>{t('first')}</span>}
     {unchanged && <span>{t('unchanged')}</span>}
     {row.inherited && <span>{t('inherited')}</span>}
+    {saved ? <span role="status">{t('editSaved')}</span>
+      : row.editedTitle !== undefined && <span>{t('editedInHistory')}</span>}
     <time dateTime={new Date(row.time).toISOString()}>{dates.format(row.time)}</time>
   </div>
 }
 
-function HistoryGroup({ group, dates, t, ui, restore }: {
+function HistoryActionButton({ ui, label, name, icon, disabled, onClick }: {
+  ui: Partial<Primitives>
+  label: string
+  name: 'edit' | 'restore'
+  icon: React.ReactNode
+  disabled: boolean
+  onClick: () => void
+}) {
+  const { Button, Tooltip } = ui
+  const className = `title-history-action title-history-${name}`
+  const button = Button
+    ? <Button size="sm" variant="ghost" className={className} onClick={onClick} disabled={disabled}
+      aria-label={label} icon={icon} />
+    : <button type="button" className={`${className} title-history-action-fallback`} onClick={onClick}
+      disabled={disabled} title={label} aria-label={label}>{icon}</button>
+  return Tooltip ? <Tooltip label={label} side="top" portal delayMs={260} maxWidth={320}>{button}</Tooltip> : button
+}
+
+function HistoryEditor({ title, t, ui, save, cancel }: {
+  title: string
+  t: Translation
+  ui: Partial<Primitives>
+  save: (title: string, signal: AbortSignal) => Promise<EditResult>
+  cancel: () => void
+}) {
+  const { Input, Button } = ui
+  const [draft, setDraft] = useState(title)
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<Extract<EditResult, { ok: false }>['label']>()
+  const input = useRef<HTMLInputElement>(null)
+  const request = useRef<AbortController>()
+  const composition = useRef({ active: false, ended: false })
+  useEffect(() => {
+    input.current?.focus()
+    input.current?.select()
+    return () => request.current?.abort()
+  }, [])
+  const blocked = pending || draft.trim() === '' || draft.trim() === title
+  const submit = async () => {
+    if (blocked || request.current || composition.current.active) return
+    const controller = new AbortController()
+    request.current = controller
+    setError(undefined)
+    setPending(true)
+    const result = await save(draft, controller.signal)
+    if (controller.signal.aborted) return
+    request.current = undefined
+    setPending(false)
+    if (!result.ok) {
+      setError(result.label)
+      input.current?.focus()
+    }
+  }
+  const inputProps = {
+    ref: input, value: draft, dir: 'auto', 'aria-label': t('titleInput'),
+    'aria-invalid': error === 'invalidTitle' || undefined, readOnly: pending,
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => { setDraft(event.currentTarget.value); setError(undefined) },
+    onCompositionStart: () => { composition.current = { active: true, ended: false } },
+    onCompositionEnd: () => { composition.current = { active: false, ended: true } },
+    onBlur: () => { composition.current = { active: false, ended: false } },
+  }
+  return <form className="title-history-editor" aria-busy={pending} onSubmit={event => { event.preventDefault(); void submit() }}
+    onKeyUp={() => { composition.current.ended = false }}
+    onKeyDown={event => {
+      const { active, ended } = composition.current
+      composition.current.ended = false
+      // Match the native modal's handling of the final key event of an IME composition.
+      const inComposition = active || ended || event.nativeEvent.isComposing || event.keyCode === 229
+      if (event.key === 'Enter' && inComposition) event.preventDefault()
+      if (event.key !== 'Escape') return
+      event.stopPropagation()
+      if (inComposition) return
+      event.preventDefault()
+      if (!pending) cancel()
+    }}>
+    {Input ? <Input {...inputProps} /> : <input className="title-history-input-fallback" {...inputProps} />}
+    {error && <p className="title-history-notice" role="alert">{t(error)}</p>}
+    <div className="title-history-editor-actions">
+      {Button ? <>
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={cancel}>{t('cancel')}</Button>
+        <Button type="submit" size="sm" variant="primary" disabled={blocked}>{t(pending ? 'saving' : 'save')}</Button>
+      </> : <>
+        <button type="button" disabled={pending} onClick={cancel}>{t('cancel')}</button>
+        <button type="submit" disabled={blocked}>{t(pending ? 'saving' : 'save')}</button>
+      </>}
+    </div>
+  </form>
+}
+
+function HistoryGroup({ group, dates, t, ui, actions, canEdit, canRestore, disabled, editing, saved }: {
   group: TitleHistoryGroup
   dates: Intl.DateTimeFormat
   t: Translation
   ui: Partial<Primitives>
-  /** Re-apply this group's title; absent for the current title or without rename access. */
-  restore?: Restore
+  actions?: HistoryActions
+  canEdit: boolean
+  canRestore: boolean
+  disabled: boolean
+  editing: boolean
+  saved: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
   const repeatsId = useId()
   const { revision, unchanged } = group
-  const { Button, Tooltip, Tag, IconRightUpOutlineRegular: Arrow } = ui
-  const setTitleLabel = t('setTitleOf', { title: revision.title })
+  const { Tooltip, Tag, IconEditOutlineRegular: Pencil, IconRightUpOutlineRegular: Arrow } = ui
+  const title = displayTitleOf(revision)
   const toggleLabel = t(expanded ? 'hideUnchanged' : 'showUnchanged', { count: unchanged.length })
-  const accept = restore === undefined ? undefined : Button
-    ? <Button size="sm" variant="ghost" className="title-history-restore" onClick={restore.run} disabled={restore.pending}
-      aria-label={setTitleLabel} icon={Arrow ? <Arrow /> : <span aria-hidden="true">↗</span>} />
-    : <button type="button" className="title-history-restore-fallback" onClick={restore.run} disabled={restore.pending}
-      title={setTitleLabel} aria-label={setTitleLabel}><span aria-hidden="true">↗</span></button>
   const count = unchanged.length === 0 ? undefined
     : Tag ? <Tag tone="quiet" className="title-history-count">×{unchanged.length}</Tag>
       : <span className="title-history-count" aria-hidden="true">×{unchanged.length}</span>
   // Same-text writes hide under their title; the whole title line toggles them.
   const name = unchanged.length === 0
-    ? <p className="title-history-title" dir="auto">{revision.title}</p>
+    ? <p className="title-history-title" dir="auto">{title}</p>
     : <button type="button" className="title-history-toggle" dir="auto" aria-expanded={expanded} aria-controls={repeatsId}
       title={Tooltip ? undefined : toggleLabel} onClick={() => setExpanded(!expanded)}>
-      <span className="title-history-title">{revision.title}</span>{count}
+      <span className="title-history-title">{title}</span>{count}
     </button>
   return <li className="title-history-group" data-seq={revision.seq}>
-    <div className="title-history-heading">
-      {Tooltip && unchanged.length > 0
-        ? <Tooltip label={toggleLabel} side="top" portal delayMs={260} maxWidth={320}>{name}</Tooltip>
-        : name}
-      {accept !== undefined && (Tooltip
-        ? <Tooltip label={setTitleLabel} side="top" portal delayMs={260} maxWidth={320}>{accept}</Tooltip>
-        : accept)}
-    </div>
-    <RevisionMeta row={revision} dates={dates} t={t} Tooltip={Tooltip} />
+    {editing && actions ? <HistoryEditor title={title} t={t} ui={ui}
+      save={(value, signal) => actions.saveEdit({ seq: revision.seq, title: value }, signal)}
+      cancel={() => actions.finishEdit(revision.seq)} />
+      : <div className="title-history-heading">
+        {Tooltip && unchanged.length > 0
+          ? <Tooltip label={toggleLabel} side="top" portal delayMs={260} maxWidth={320}>{name}</Tooltip>
+          : name}
+        {actions && (canEdit || canRestore) && <div className="title-history-row-actions">
+          {canEdit && <HistoryActionButton ui={ui} name="edit" label={t('editTitleOf', { title })} disabled={disabled}
+            icon={Pencil ? <Pencil /> : <span aria-hidden="true">✎</span>} onClick={() => actions.startEdit(revision.seq)} />}
+          {canRestore && <HistoryActionButton ui={ui} name="restore" label={t('setTitleOf', { title })} disabled={disabled}
+            icon={Arrow ? <Arrow /> : <span aria-hidden="true">↗</span>} onClick={() => actions.restore(group)} />}
+        </div>}
+      </div>}
+    <RevisionMeta row={revision} dates={dates} t={t} Tooltip={Tooltip} saved={saved} />
     {unchanged.length > 0 && <ol id={repeatsId} className="title-history-repeats" role="list" hidden={!expanded}>
       {expanded && unchanged.map(row => <li key={row.seq}>
         <RevisionMeta row={row} dates={dates} t={t} Tooltip={Tooltip} unchanged />
@@ -252,28 +391,26 @@ function HistoryGroup({ group, dates, t, ui, restore }: {
   </li>
 }
 
-function HistoryList({ rows, t, language, ui, actions, busy }: {
-  rows: TitleRevision[]
+function HistoryList({ rows, t, language, ui, actions, busy, editing, canEdit, savedSeq }: LoadedHistory & {
   t: Translation
   language: string
   ui: Partial<Primitives>
-  /** The shared re-apply state; absent when the Peer may not rename. */
-  actions?: { run: (group: TitleHistoryGroup) => void }
-  /** Whether a re-apply request is in flight. */
+  actions?: HistoryActions
   busy: boolean
+  editing: number | null
+  savedSeq?: number
 }) {
   const dates = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'medium' })
   const groups = groupTitleHistory(rows)
   const current = groups[0]?.revision.title
   return <ol className="title-history-list" role="list" aria-busy={busy}>{groups.map((group, index) =>
-    // The newest group holds the current title, and re-applying its text would only add an unchanged write.
     <HistoryGroup key={group.revision.seq} group={group} dates={dates} t={t} ui={ui}
-      restore={actions === undefined || index === 0 || group.revision.title === current ? undefined
-        : { pending: busy, run: () => actions.run(group) }} />
+      actions={index === 0 ? undefined : actions} canRestore={displayTitleOf(group.revision) !== current} canEdit={canEdit}
+      disabled={busy || editing !== null} editing={editing === group.revision.seq} saved={savedSeq === group.revision.seq} />
   )}</ol>
 }
 
-function HistoryContent({ target, t, language, ui, canRename, rename }: {
+function HistoryContent({ target, t, language, ui, canRename, rename, editPending }: {
   target: Target
   t: Translation
   language: string
@@ -282,16 +419,18 @@ function HistoryContent({ target, t, language, ui, canRename, rename }: {
   canRename: boolean
   /** Re-apply one title through the native rename path and resolve to the accepted title. */
   rename: (title: string) => Promise<string>
+  editPending: React.MutableRefObject<boolean>
 }) {
   const { Button } = ui
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [renameState, setRenameState] = useState<RenameState>({ status: 'idle' })
+  const [notice, setNotice] = useState<Notice>({ status: 'idle' })
+  const [editing, setEditing] = useState<number | null>(null)
   const region = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const controller = new AbortController()
-    void loadHistory(target.sessionId, controller.signal).then(rows => {
-      if (!controller.signal.aborted) setState({ status: 'loaded', rows })
+    void loadHistory(target.sessionId, controller.signal).then(history => {
+      if (!controller.signal.aborted) setState({ status: 'loaded', ...history })
     }, () => {
       if (!controller.signal.aborted) setState({ status: 'failed' })
     })
@@ -308,56 +447,89 @@ function HistoryContent({ target, t, language, ui, canRename, rename }: {
       const node = region.current
       if (node === null) return
       const groups = [...node.querySelectorAll<HTMLElement>('li[data-seq]')]
+      const restoreButton = (group: HTMLElement) => group.querySelector<HTMLButtonElement>('.title-history-restore')
       const target = which === 'same'
         ? groups.find(li => li.dataset.seq === String(seq))
-        : groups.find(li => Number(li.dataset.seq) < seq)
-      ;(target?.querySelector<HTMLElement>('.title-history-restore, .title-history-restore-fallback') ?? node)
-        .focus({ preventScroll: true })
+        : groups.find(li => Number(li.dataset.seq) < seq && restoreButton(li) !== null)
+      const focus = target === undefined ? node : restoreButton(target) ?? node
+      focus.focus({ preventScroll: true })
     })
   }
   const restore = async (group: TitleHistoryGroup) => {
-    const title = group.revision.title
+    const title = displayTitleOf(group.revision)
     // The clicked button leaves the list once its title is current, so hold focus on the region meanwhile.
     region.current?.focus({ preventScroll: true })
-    setRenameState({ status: 'pending', title })
+    setNotice({ status: 'pending', title })
     let accepted: string
     try {
       accepted = await rename(title)
     } catch (error) {
-      setRenameState({ status: 'failed', message: error instanceof Error ? error.message : String(error) })
+      setNotice({ status: 'failed', message: error instanceof Error ? error.message : String(error) })
       focusAfterRestore(group.revision.seq, 'same')
       return
     }
     // Keep the buttons disabled until the list shows the accepted write.
     try {
-      const rows = await loadHistory(target.sessionId, new AbortController().signal)
-      setState({ status: 'loaded', rows })
+      const history = await loadHistory(target.sessionId, new AbortController().signal)
+      setState({ status: 'loaded', ...history })
     } catch {
       setState({ status: 'failed' })
     }
-    setRenameState({ status: 'restored', title: accepted })
+    setNotice({ status: 'restored', title: accepted })
     focusAfterRestore(group.revision.seq, 'older')
   }
-  const pending = renameState.status === 'pending'
+  const startEdit = (seq: number) => {
+    setNotice({ status: 'idle' })
+    setEditing(seq)
+  }
+  const finishEdit = (seq: number) => {
+    setEditing(null)
+    requestAnimationFrame(() => {
+      const node = region.current
+      const focus = node?.querySelector<HTMLButtonElement>(`li[data-seq="${seq}"] .title-history-edit`) ?? node
+      focus?.focus({ preventScroll: true })
+    })
+  }
+  const saveEdit = async (edit: TitleEdit, signal: AbortSignal): Promise<EditResult> => {
+    editPending.current = true
+    try {
+      const result = await saveTitleEdit(target.sessionId, edit, signal)
+      if (result.ok && !signal.aborted) {
+        setState(current => current.status !== 'loaded' ? current : {
+          ...current,
+          rows: current.rows.map(row => row.seq === edit.seq
+            ? { ...row, editedTitle: result.title === row.title ? undefined : result.title }
+            : row),
+        })
+        setNotice({ status: 'edited', seq: edit.seq })
+        finishEdit(edit.seq)
+      }
+      return result
+    } finally {
+      editPending.current = false
+    }
+  }
+  const pending = notice.status === 'pending'
   return <div ref={region} className="title-history-content" role="region" aria-label={t('history')} tabIndex={0}>
     <div role="status">
       {state.status === 'loading' && <p>{t('loading')}</p>}
       {state.status === 'loaded' && state.rows.length === 0 && <p>{t('empty')}</p>}
-      {renameState.status === 'pending' &&
-        <p className="title-history-notice">{t('settingTitle', { title: renameState.title })}</p>}
-      {renameState.status === 'restored' &&
-        <p className="title-history-notice">{t('titleSet', { title: renameState.title })}</p>}
+      {notice.status === 'pending' &&
+        <p className="title-history-notice">{t('settingTitle', { title: notice.title })}</p>}
+      {notice.status === 'restored' &&
+        <p className="title-history-notice">{t('titleSet', { title: notice.title })}</p>}
     </div>
-    {renameState.status === 'failed' &&
-      <p className="title-history-notice" role="alert">{t('setTitleFailed')} {renameState.message}</p>}
+    {notice.status === 'failed' &&
+      <p className="title-history-notice" role="alert">{t('setTitleFailed')} {notice.message}</p>}
     {state.status === 'failed' && <>
       <p role="alert">{t('failed')}</p>
       {Button ? <Button variant="outline" onClick={retry}>{t('retry')}</Button>
         : <button type="button" onClick={retry}>{t('retry')}</button>}
     </>}
     {state.status === 'loaded' && state.rows.length > 0 &&
-      <HistoryList rows={state.rows} t={t} language={language} ui={ui} busy={pending}
-        actions={canRename ? { run: restore } : undefined} />}
+      <HistoryList rows={state.rows} canEdit={state.canEdit} t={t} language={language} ui={ui} busy={pending}
+        editing={editing} savedSeq={notice.status === 'edited' ? notice.seq : undefined}
+        actions={canRename ? { restore, startEdit, finishEdit, saveEdit } : undefined} />}
   </div>
 }
 
@@ -416,12 +588,14 @@ export function apply(ctx: Context): void {
   /** The open dialog, mounted per opening so the access Hook keeps a stable call order. */
   function HistoryDialog({ t, target, useSessionAccess }: { t: Translation; target: Target } & AccessProps) {
     const canRename = useSessionAccess(target.sessionId, RENAME_ACCESS)
+    const editPending = useRef(false)
+    const closeDialog = () => { if (!editPending.current) close() }
     const rename = (title: string) => reapplyTitle(ctx.sessions, target.sessionId, title)
     const content = <HistoryContent key={target.sessionId} target={target} t={t} language={ctx.locale.getLocale().active}
-      ui={ui} canRename={canRename} rename={rename} />
+      ui={ui} canRename={canRename} rename={rename} editPending={editPending} />
     return Modal
-      ? <Modal open className="title-history-modal" contentClassName="title-history-modal-content" onClose={close} title={t('history')} closeLabel={t('close')}>{content}</Modal>
-      : <BrowserModal onClose={close} title={t('history')} closeLabel={t('close')}>{content}</BrowserModal>
+      ? <Modal open className="title-history-modal" contentClassName="title-history-modal-content" onClose={closeDialog} title={t('history')} closeLabel={t('close')}>{content}</Modal>
+      : <BrowserModal onClose={closeDialog} title={t('history')} closeLabel={t('close')}>{content}</BrowserModal>
   }
 
   ctx.effect(() => ctx.slots.inject(OVERLAY, () => ctx.slots.register({ name: OVERLAY, id: ID, locale: ID }, HistoryOverlay)), `${ID}: overlay`)

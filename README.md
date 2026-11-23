@@ -4,9 +4,11 @@
 
 Open the session’s **⋯** menu and choose **Title history** to see the original title,
 later edits, their timestamps, and which titles were generated automatically.
-Click **↗** beside a past title to make it the current title again; DSH records that write as a manual edit.
-The button appears only while the current connection may rename the session.
-An Agent in the conversation can list the same titles and restore one through the `session_title_history` tool.
+Click the pencil beside a past title to edit and save that history entry in place.
+Click **↗** to make the displayed text current again.
+DSH records the restore as a manual rename.
+These actions appear while the current connection may rename the session.
+An Agent in the conversation can list, edit, or restore past titles through the `session_title_history` tool.
 
 For DeepSeek Harness `0.2.2-rc.5` on Desktop and Web.
 Enable **Session title history** in **Session Atlas**.

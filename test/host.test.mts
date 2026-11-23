@@ -41,15 +41,39 @@ test('groups adjacent same-title writes without merging distinct revisions that 
   assert.deepEqual(groupTitleHistory([]), [])
 })
 
-test('reads exactly one session, rejects missing input, and releases the observation, tool, and route', async () => {
+test('the route and tool share history edits and release their storage, observations and registrations', async () => {
   const disposers = []
   let route
   let tool
   let reads = 0
   let released = 0
   let readSignal
-  apply({
+  let closed = false
+  let writeFailure = false
+  const edits = new Map()
+  await apply({
     effect: effect => disposers.push(effect()),
+    storageDomain: {
+      async open(spec) {
+        assert.equal(spec.name, 'session_title_history')
+        assert.equal(spec.tables.edits.valueSchema.safeParse('Title').success, true)
+        assert.equal(spec.tables.edits.valueSchema.safeParse('').success, false)
+        return {
+          table(name) {
+            assert.equal(name, 'edits')
+            return {
+              get: key => edits.get(key),
+              async put(key, value) {
+                if (writeFailure) throw new Error('Storage write failed')
+                edits.set(key, value)
+              },
+              async delete(key) { return edits.delete(key) },
+            }
+          },
+          async close() { closed = true },
+        }
+      },
+    },
     connection: { fetch: { register(next) { route = next; return () => { route = undefined } } } },
     sessionController: {},
     tools: { register(definition) { tool = definition; return () => { tool = undefined } } },
@@ -57,28 +81,62 @@ test('reads exactly one session, rejects missing input, and releases the observa
       observeSession(id, options) {
         reads++
         if (id === 'missing') throw Object.assign(new Error('Missing'), { code: 'SESSION_QUERY_SESSION_NOT_FOUND' })
-        assert.equal(id, 'example-session')
+        assert.ok(id === 'example-session' || id === 'other-session')
         assert.equal(options.projectionMode, 'none')
         readSignal = options.signal
         return { events, inheritedEventCount: 4, [Symbol.dispose]() { released++ } }
       },
     },
   })
-  assert.deepEqual(inject, ['connection', 'sessionQuery', 'sessionController', 'tools'])
+  assert.deepEqual(inject, ['connection', 'sessionQuery', 'sessionController', 'storageDomain', 'tools'])
   assert.equal(tool.name, 'session_title_history')
   assert.equal(route.path, HISTORY_PATH)
-  assert.deepEqual(route.methods, ['GET'])
-  const get = query => route.fetch(new Request(`http://localhost${HISTORY_PATH}?${query}`))
-  assert.equal((await get('sessionId=%00')).status, 400)
+  assert.deepEqual(route.methods, ['GET', 'POST'])
+  const request = (id, init) => route.fetch(new Request(`http://localhost${HISTORY_PATH}?sessionId=${id}`, init))
+  const post = (seq, title) => request('example-session', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seq, title }),
+  })
+  assert.equal((await request('%00')).status, 400)
+  assert.equal((await request('example-session', { method: 'POST', body: '{}' })).status, 415)
+  assert.deepEqual(await (await post(-1, 'Text')).json(), { error: 'invalid-edit' })
+  assert.deepEqual(await (await post(3, ' \u200B ')).json(), { error: 'title-invalid' })
   assert.equal(reads, 0)
-  assert.equal((await get('sessionId=missing')).status, 404)
-  const response = await get('sessionId=example-session')
+  assert.equal((await request('missing')).status, 404)
+  const response = await request('example-session')
   assert.equal(response.status, 200)
   assert.equal(response.headers.get('Cache-Control'), 'no-store')
-  assert.deepEqual(await response.json(), { history: titleHistory(events, 4) })
+  const original = titleHistory(events, 4)
+  assert.deepEqual(await response.json(), { history: original, canEdit: true })
   assert.equal(released, 1)
-  for (const dispose of disposers.reverse()) dispose()
+
+  for (const seq of [4, 5, 99]) {
+    const rejected = await post(seq, 'Text')
+    assert.equal(rejected.status, 404)
+    assert.deepEqual(await rejected.json(), { error: 'past-title-not-found' })
+  }
+  assert.equal(edits.size, 0)
+  const saved = await post(3, '  历\u200B史\t标题  ')
+  assert.equal(saved.status, 200)
+  assert.deepEqual(await saved.json(), { title: '历史 标题' })
+  const read = async (id = 'example-session') => (await (await request(id)).json()).history
+  assert.deepEqual(await read(), original.map(row => row.seq === 3 ? { ...row, editedTitle: '历史 标题' } : row))
+  assert.deepEqual(await read('other-session'), original)
+  writeFailure = true
+  assert.equal((await post(3, 'Failed')).status, 500)
+  assert.equal((await read()).find(row => row.seq === 3).editedTitle, '历史 标题')
+  writeFailure = false
+
+  const context = { signal: new AbortController().signal }
+  const edit = await tool.execute({ action: 'edit', seq: 3, title: 'From tool', sessionId: 'example-session' }, context)
+  assert.deepEqual(edit, { ok: true, action: 'edit', seq: 3, title: 'From tool', sessionId: 'example-session' })
+  assert.equal((await read()).find(row => row.seq === 3).editedTitle, 'From tool')
+  assert.equal((await post(3, 'Generated')).status, 200)
+  assert.deepEqual(await read(), original)
+  assert.deepEqual(titleHistory(events, 4), original, 'editing preserves the original log')
+  assert.equal(released, reads - 1, 'every successful observation was released')
+  for (const dispose of disposers.reverse()) await dispose()
   assert.equal(route, undefined)
   assert.equal(tool, undefined)
   assert.equal(readSignal.aborted, true)
+  assert.equal(closed, true)
 })

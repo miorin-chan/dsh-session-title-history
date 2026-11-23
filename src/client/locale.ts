@@ -6,6 +6,10 @@ const en = {
   showUnchanged: 'Show unchanged writes ({count})', hideUnchanged: 'Hide unchanged writes',
   setTitleOf: 'Set “{title}” as the title', settingTitle: 'Setting the title to “{title}”…',
   titleSet: 'Title set to “{title}”.', setTitleFailed: 'Could not set the title.',
+  editTitleOf: 'Edit historical title “{title}”', titleInput: 'Historical title', editedInHistory: 'Edited in history',
+  cancel: 'Cancel', save: 'Save', saving: 'Saving…', editSaved: 'Saved',
+  editFailed: 'Could not save the historical title.', invalidTitle: 'Enter a title with visible text.',
+  pastTitleMissing: 'This historical title is no longer available. Reopen the history and try again.',
 }
 
 export type Label = keyof typeof en
@@ -18,6 +22,10 @@ export const labels = {
     showUnchanged: '展开同名写入（{count} 条）', hideUnchanged: '折叠同名写入',
     setTitleOf: '将「{title}」设为标题', settingTitle: '正在将标题设为「{title}」…',
     titleSet: '标题已设为「{title}」。', setTitleFailed: '无法设置标题。',
+    editTitleOf: '编辑历史标题「{title}」', titleInput: '历史标题', editedInHistory: '历史标题已编辑',
+    cancel: '取消', save: '保存', saving: '保存中…', editSaved: '已保存',
+    editFailed: '无法保存历史标题。', invalidTitle: '请输入可见的标题文字。',
+    pastTitleMissing: '该历史标题已不可用。请重新打开标题历史后再试。',
   },
   ja: {
     history: 'タイトル履歴', close: '閉じる', loading: 'タイトル履歴を読み込み中…', empty: 'タイトル履歴はまだありません。',
@@ -26,6 +34,10 @@ export const labels = {
     showUnchanged: '同じタイトルの記録を表示（{count} 件）', hideUnchanged: '同じタイトルの記録を折りたたむ',
     setTitleOf: '「{title}」をタイトルに設定', settingTitle: '「{title}」にタイトルを設定中…',
     titleSet: 'タイトルを「{title}」に設定しました。', setTitleFailed: 'タイトルを設定できませんでした。',
+    editTitleOf: '過去のタイトル「{title}」を編集', titleInput: '過去のタイトル', editedInHistory: '履歴で編集済み',
+    cancel: 'キャンセル', save: '保存', saving: '保存中…', editSaved: '保存済み',
+    editFailed: '過去のタイトルを保存できませんでした。', invalidTitle: '表示できる文字を入力してください。',
+    pastTitleMissing: 'このタイトルは履歴にありません。履歴を開き直してお試しください。',
   },
   de: {
     history: 'Titelverlauf', close: 'Schließen', loading: 'Titelverlauf wird geladen…', empty: 'Noch kein Titelverlauf vorhanden.',
@@ -34,6 +46,10 @@ export const labels = {
     showUnchanged: 'Unveränderte Einträge anzeigen ({count})', hideUnchanged: 'Unveränderte Einträge ausblenden',
     setTitleOf: '„{title}“ als Titel festlegen', settingTitle: 'Titel wird auf „{title}“ gesetzt…',
     titleSet: 'Titel wurde auf „{title}“ gesetzt.', setTitleFailed: 'Der Titel konnte nicht festgelegt werden.',
+    editTitleOf: 'Früheren Titel „{title}“ bearbeiten', titleInput: 'Früherer Titel', editedInHistory: 'Im Verlauf bearbeitet',
+    cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert…', editSaved: 'Gespeichert',
+    editFailed: 'Der frühere Titel konnte nicht gespeichert werden.', invalidTitle: 'Gib einen Titel mit sichtbaren Zeichen ein.',
+    pastTitleMissing: 'Dieser Titel ist nicht mehr verfügbar. Öffne den Verlauf erneut und versuche es noch einmal.',
   },
   es: {
     history: 'Historial de títulos', close: 'Cerrar', loading: 'Cargando el historial de títulos…', empty: 'Aún no hay historial de títulos.',
@@ -42,6 +58,10 @@ export const labels = {
     showUnchanged: 'Mostrar registros sin cambios ({count})', hideUnchanged: 'Ocultar registros sin cambios',
     setTitleOf: 'Establecer «{title}» como título', settingTitle: 'Estableciendo «{title}» como título…',
     titleSet: 'Título establecido como «{title}».', setTitleFailed: 'No se pudo establecer el título.',
+    editTitleOf: 'Editar el título anterior «{title}»', titleInput: 'Título anterior', editedInHistory: 'Editado en el historial',
+    cancel: 'Cancelar', save: 'Guardar', saving: 'Guardando…', editSaved: 'Guardado',
+    editFailed: 'No se pudo guardar el título anterior.', invalidTitle: 'Introduce un título con caracteres visibles.',
+    pastTitleMissing: 'Este título ya no está disponible. Vuelve a abrir el historial e inténtalo de nuevo.',
   },
   fr: {
     history: 'Historique des titres', close: 'Fermer', loading: 'Chargement de l’historique des titres…', empty: 'Aucun titre dans l’historique.',
@@ -50,6 +70,10 @@ export const labels = {
     showUnchanged: 'Afficher les entrées inchangées ({count})', hideUnchanged: 'Masquer les entrées inchangées',
     setTitleOf: 'Définir « {title} » comme titre', settingTitle: 'Définition du titre sur « {title} »…',
     titleSet: 'Le titre est maintenant « {title} ».', setTitleFailed: 'Impossible de définir le titre.',
+    editTitleOf: 'Modifier l’ancien titre « {title} »', titleInput: 'Ancien titre', editedInHistory: 'Modifié dans l’historique',
+    cancel: 'Annuler', save: 'Enregistrer', saving: 'Enregistrement…', editSaved: 'Enregistré',
+    editFailed: 'Impossible d’enregistrer l’ancien titre.', invalidTitle: 'Saisissez un titre avec des caractères visibles.',
+    pastTitleMissing: 'Ce titre n’est plus disponible. Rouvrez l’historique et réessayez.',
   },
   pt: {
     history: 'Histórico de títulos', close: 'Fechar', loading: 'A carregar o histórico de títulos…', empty: 'Ainda não há histórico de títulos.',
@@ -58,6 +82,10 @@ export const labels = {
     showUnchanged: 'Mostrar registos inalterados ({count})', hideUnchanged: 'Ocultar registos inalterados',
     setTitleOf: 'Definir «{title}» como título', settingTitle: 'A definir «{title}» como título…',
     titleSet: 'Título definido como «{title}».', setTitleFailed: 'Não foi possível definir o título.',
+    editTitleOf: 'Editar o título anterior «{title}»', titleInput: 'Título anterior', editedInHistory: 'Editado no histórico',
+    cancel: 'Cancelar', save: 'Guardar', saving: 'A guardar…', editSaved: 'Guardado',
+    editFailed: 'Não foi possível guardar o título anterior.', invalidTitle: 'Introduza um título com caracteres visíveis.',
+    pastTitleMissing: 'Este título já não está disponível. Volte a abrir o histórico e tente novamente.',
   },
   ru: {
     history: 'История заголовков', close: 'Закрыть', loading: 'Загрузка истории заголовков…', empty: 'История заголовков пока пуста.',
@@ -66,6 +94,10 @@ export const labels = {
     showUnchanged: 'Показать записи без изменений ({count})', hideUnchanged: 'Скрыть записи без изменений',
     setTitleOf: 'Сделать «{title}» заголовком', settingTitle: 'Установка заголовка «{title}»…',
     titleSet: 'Заголовок изменён на «{title}».', setTitleFailed: 'Не удалось изменить заголовок.',
+    editTitleOf: 'Изменить прежний заголовок «{title}»', titleInput: 'Прежний заголовок', editedInHistory: 'Изменён в истории',
+    cancel: 'Отмена', save: 'Сохранить', saving: 'Сохранение…', editSaved: 'Сохранено',
+    editFailed: 'Не удалось сохранить прежний заголовок.', invalidTitle: 'Введите заголовок с видимыми символами.',
+    pastTitleMissing: 'Этот заголовок больше недоступен. Откройте историю заново и повторите попытку.',
   },
 }
 
