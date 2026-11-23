@@ -1,2 +1,6 @@
 node_modules/
 *.tgz
+/index.js
+/client.js
+/lib/history.js
+/lib/tool.js

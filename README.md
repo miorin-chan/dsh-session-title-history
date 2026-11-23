@@ -9,8 +9,9 @@ The button appears only while the current connection may rename the session.
 An Agent in the conversation can list the same titles and restore one through the `session_title_history` tool.
 
 For DeepSeek Harness `0.2.2-rc.5` on Desktop and Web.
-Enable **Session title history** in **Session Atlas**, or install this directory
-as a standalone bundle from **Plugins → Add plugin**.
+Enable **Session title history** in **Session Atlas**.
+For a standalone install from source, run `npm ci` in the checkout to build the plugin,
+then select that directory in **Plugins → Add plugin**.
 Use one installation route per profile because both use the same plugin row.
 
 History includes title events still present in the session log, including writes made before installation.

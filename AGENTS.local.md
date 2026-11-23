@@ -38,8 +38,8 @@ Check whether new behavior belongs in its own bundle.
 
 - Use the workspace TypeScript base for plugins with code.
   Put Host, Client, and private module sources under `src/host/`, `src/client/`, and `src/lib/` as needed.
-  Treat the initial [client.js](client.js) and [index.js](index.js) as scaffold entries to migrate.
-  After migration, regenerate JavaScript from TypeScript.
+  The build generates `index.js`, `client.js`, `lib/history.js`, and `lib/tool.js`.
+  Git ignores these files, and the npm tarball includes them.
 - Keep Plugin Manager metadata in `locale/*.json` and runtime translations in `LABELS` in the Client source.
 - The client test uses a fake `ctx` to check registration, resources, and cleanup.
 - `docs/scripts/reflow` is the standalone documentation formatter and requires Python 3.11 or newer.
@@ -83,7 +83,8 @@ Update `CHANGELOG.md` when releasing.
 
 ## Verification
 
-- Run `npm run build` and `npm run check` from the project directory for plugins with code.
+- In a fresh checkout, run `npm ci` in the project directory to install locked dependencies and build.
+  After editing source, run `npm run build` to refresh the runtime files before `npm run check`.
 - From the workspace root, run `node tools/new-dsh-plugin/cli.mjs --check plugins/<id>` to check the manifest,
   locale JSON, and the other scaffold files.
 - Use a disposable profile for installation tests.
