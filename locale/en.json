@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Session title history",
-    "description": "See when each session title was generated or edited.",
+    "description": "See when each session title was generated or edited, and reuse a past title in one click.",
     "detail": "docs/DETAIL.en.md"
   }
 }

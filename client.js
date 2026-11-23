@@ -67,7 +67,11 @@ var en = {
   unchanged: "Text unchanged",
   inherited: "Inherited from parent session",
   showUnchanged: "Show unchanged writes ({count})",
-  hideUnchanged: "Hide unchanged writes"
+  hideUnchanged: "Hide unchanged writes",
+  setTitleOf: "Set \u201C{title}\u201D as the title",
+  settingTitle: "Setting the title to \u201C{title}\u201D\u2026",
+  titleSet: "Title set to \u201C{title}\u201D.",
+  setTitleFailed: "Could not set the title."
 };
 var labels = {
   en,
@@ -85,7 +89,11 @@ var labels = {
     unchanged: "\u6587\u5B57\u672A\u53D8",
     inherited: "\u7EE7\u627F\u81EA\u7236\u4F1A\u8BDD",
     showUnchanged: "\u5C55\u5F00\u540C\u540D\u5199\u5165\uFF08{count} \u6761\uFF09",
-    hideUnchanged: "\u6298\u53E0\u540C\u540D\u5199\u5165"
+    hideUnchanged: "\u6298\u53E0\u540C\u540D\u5199\u5165",
+    setTitleOf: "\u5C06\u300C{title}\u300D\u8BBE\u4E3A\u6807\u9898",
+    settingTitle: "\u6B63\u5728\u5C06\u6807\u9898\u8BBE\u4E3A\u300C{title}\u300D\u2026",
+    titleSet: "\u6807\u9898\u5DF2\u8BBE\u4E3A\u300C{title}\u300D\u3002",
+    setTitleFailed: "\u65E0\u6CD5\u8BBE\u7F6E\u6807\u9898\u3002"
   },
   ja: {
     history: "\u30BF\u30A4\u30C8\u30EB\u5C65\u6B74",
@@ -101,7 +109,11 @@ var labels = {
     unchanged: "\u30C6\u30AD\u30B9\u30C8\u5909\u66F4\u306A\u3057",
     inherited: "\u89AA\u30BB\u30C3\u30B7\u30E7\u30F3\u304B\u3089\u7D99\u627F",
     showUnchanged: "\u540C\u3058\u30BF\u30A4\u30C8\u30EB\u306E\u8A18\u9332\u3092\u8868\u793A\uFF08{count} \u4EF6\uFF09",
-    hideUnchanged: "\u540C\u3058\u30BF\u30A4\u30C8\u30EB\u306E\u8A18\u9332\u3092\u6298\u308A\u305F\u305F\u3080"
+    hideUnchanged: "\u540C\u3058\u30BF\u30A4\u30C8\u30EB\u306E\u8A18\u9332\u3092\u6298\u308A\u305F\u305F\u3080",
+    setTitleOf: "\u300C{title}\u300D\u3092\u30BF\u30A4\u30C8\u30EB\u306B\u8A2D\u5B9A",
+    settingTitle: "\u300C{title}\u300D\u306B\u30BF\u30A4\u30C8\u30EB\u3092\u8A2D\u5B9A\u4E2D\u2026",
+    titleSet: "\u30BF\u30A4\u30C8\u30EB\u3092\u300C{title}\u300D\u306B\u8A2D\u5B9A\u3057\u307E\u3057\u305F\u3002",
+    setTitleFailed: "\u30BF\u30A4\u30C8\u30EB\u3092\u8A2D\u5B9A\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002"
   },
   de: {
     history: "Titelverlauf",
@@ -117,7 +129,11 @@ var labels = {
     unchanged: "Text unver\xE4ndert",
     inherited: "Aus der \xFCbergeordneten Sitzung \xFCbernommen",
     showUnchanged: "Unver\xE4nderte Eintr\xE4ge anzeigen ({count})",
-    hideUnchanged: "Unver\xE4nderte Eintr\xE4ge ausblenden"
+    hideUnchanged: "Unver\xE4nderte Eintr\xE4ge ausblenden",
+    setTitleOf: "\u201E{title}\u201C als Titel festlegen",
+    settingTitle: "Titel wird auf \u201E{title}\u201C gesetzt\u2026",
+    titleSet: "Titel wurde auf \u201E{title}\u201C gesetzt.",
+    setTitleFailed: "Der Titel konnte nicht festgelegt werden."
   },
   es: {
     history: "Historial de t\xEDtulos",
@@ -133,7 +149,11 @@ var labels = {
     unchanged: "Texto sin cambios",
     inherited: "Heredado de la sesi\xF3n de origen",
     showUnchanged: "Mostrar registros sin cambios ({count})",
-    hideUnchanged: "Ocultar registros sin cambios"
+    hideUnchanged: "Ocultar registros sin cambios",
+    setTitleOf: "Establecer \xAB{title}\xBB como t\xEDtulo",
+    settingTitle: "Estableciendo \xAB{title}\xBB como t\xEDtulo\u2026",
+    titleSet: "T\xEDtulo establecido como \xAB{title}\xBB.",
+    setTitleFailed: "No se pudo establecer el t\xEDtulo."
   },
   fr: {
     history: "Historique des titres",
@@ -149,7 +169,11 @@ var labels = {
     unchanged: "Texte inchang\xE9",
     inherited: "H\xE9rit\xE9 de la session parente",
     showUnchanged: "Afficher les entr\xE9es inchang\xE9es ({count})",
-    hideUnchanged: "Masquer les entr\xE9es inchang\xE9es"
+    hideUnchanged: "Masquer les entr\xE9es inchang\xE9es",
+    setTitleOf: "D\xE9finir \xAB {title} \xBB comme titre",
+    settingTitle: "D\xE9finition du titre sur \xAB {title} \xBB\u2026",
+    titleSet: "Le titre est maintenant \xAB {title} \xBB.",
+    setTitleFailed: "Impossible de d\xE9finir le titre."
   },
   pt: {
     history: "Hist\xF3rico de t\xEDtulos",
@@ -165,7 +189,11 @@ var labels = {
     unchanged: "Texto inalterado",
     inherited: "Herdado da sess\xE3o de origem",
     showUnchanged: "Mostrar registos inalterados ({count})",
-    hideUnchanged: "Ocultar registos inalterados"
+    hideUnchanged: "Ocultar registos inalterados",
+    setTitleOf: "Definir \xAB{title}\xBB como t\xEDtulo",
+    settingTitle: "A definir \xAB{title}\xBB como t\xEDtulo\u2026",
+    titleSet: "T\xEDtulo definido como \xAB{title}\xBB.",
+    setTitleFailed: "N\xE3o foi poss\xEDvel definir o t\xEDtulo."
   },
   ru: {
     history: "\u0418\u0441\u0442\u043E\u0440\u0438\u044F \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u043E\u0432",
@@ -181,16 +209,29 @@ var labels = {
     unchanged: "\u0422\u0435\u043A\u0441\u0442 \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F",
     inherited: "\u0423\u043D\u0430\u0441\u043B\u0435\u0434\u043E\u0432\u0430\u043D\u043E \u043E\u0442 \u0440\u043E\u0434\u0438\u0442\u0435\u043B\u044C\u0441\u043A\u043E\u0439 \u0441\u0435\u0441\u0441\u0438\u0438",
     showUnchanged: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439 ({count})",
-    hideUnchanged: "\u0421\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439"
+    hideUnchanged: "\u0421\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439",
+    setTitleOf: "\u0421\u0434\u0435\u043B\u0430\u0442\u044C \xAB{title}\xBB \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u043E\u043C",
+    settingTitle: "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430 \xAB{title}\xBB\u2026",
+    titleSet: "\u0417\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A \u0438\u0437\u043C\u0435\u043D\u0451\u043D \u043D\u0430 \xAB{title}\xBB.",
+    setTitleFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A."
   }
 };
 
+// src/client/rename.ts
+var ID = "dsh-session-title-history";
+async function reapplyTitle(sessions, sessionId, title) {
+  const result = await sessions.using(sessionId, { source: ID }, (reference) => reference.binding.session.rename(title));
+  if (!result.ok) throw new Error(result.error.message);
+  return result.value.title;
+}
+
 // src/client/index.tsx
 var import_jsx_runtime = require("react/jsx-runtime");
-var ID = "dsh-session-title-history";
+var ID2 = "dsh-session-title-history";
 var MENU_ICON = "contextMenu.icon";
 var OVERLAY = "shell.overlay";
-var inject = ["locale", "slots", "contextMenus"];
+var RENAME_ACCESS = "session/rename";
+var inject = ["locale", "slots", "contextMenus", "sessions"];
 var css = `
   /* DSH 0.2.2-rc.5 renders Copy session ID with its own separator. Suppress
      it only when the History row immediately precedes that native copy row. */
@@ -214,11 +255,47 @@ var css = `
   .title-history-content { max-height: min(60vh, 32rem); min-height: 0; overflow: auto; }
   .title-history-content:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -2px; }
   .title-history-dialog .title-history-content { padding: 0 1rem 1rem; }
+  .title-history-notice {
+    margin: 0 0 10px; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary);
+    overflow-wrap: anywhere;
+  }
+  .title-history-notice[role="alert"] { color: var(--dsw-alias-state-error-primary); }
   .title-history-list, .title-history-repeats { margin: 0; padding: 0; list-style: none; }
   .title-history-group { padding: 10px 0; }
   .title-history-group + .title-history-group { border-top: 1px solid var(--dsw-alias-border-l1); }
   .title-history-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
   .title-history-title { margin: 0; font-size: 14px; font-weight: 500; line-height: 22px; overflow-wrap: anywhere; }
+  /* A title with same-text writes toggles them from its whole line; the padding only widens the hover plate. */
+  .title-history-toggle {
+    display: flex; flex: 1; align-items: baseline; gap: 6px; min-width: 0;
+    margin: -3px 0 -3px -6px; padding: 3px 6px; border: 0; border-radius: 6px;
+    background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer;
+  }
+  @media (hover: hover) {
+    .title-history-toggle:hover { background: var(--dsw-alias-interactive-bg-hover); }
+  }
+  .title-history-toggle:focus-visible {
+    outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-brand-primary));
+    outline-offset: -2px;
+  }
+  .title-history-count { flex: none; }
+  .title-history-restore-fallback {
+    flex: none; width: 28px; height: 28px; margin-block: -3px; padding: 0; border: 0; border-radius: var(--dsw-radius-sm);
+    background: transparent; color: inherit; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  /* Square icon control, as the native row icon buttons (DSH 0.2.2-rc.5, dsh-client-ui-workspace .iconButton). */
+  .title-history-heading .title-history-restore {
+    flex: none; width: 28px; height: 28px; margin-block: -3px; padding: 0; border-radius: var(--dsw-radius-sm);
+    color: var(--dsw-alias-label-secondary);
+  }
+  @media (hover: hover) {
+    .title-history-heading .title-history-restore:hover:not(:disabled) { color: var(--dsw-alias-label-primary); }
+  }
+  /* Touch gets a larger target without a tooltip to explain the glyph. */
+  @media (any-pointer: coarse) {
+    .title-history-heading .title-history-restore { width: 36px; height: 36px; margin-block: -7px; }
+  }
+  .title-history-restore:disabled, .title-history-restore-fallback:disabled { cursor: not-allowed; opacity: 0.4; }
   .title-history-meta {
     display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px;
     margin-top: 4px; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary);
@@ -229,20 +306,6 @@ var css = `
     text-decoration: underline dotted; text-underline-offset: 3px;
   }
   .title-history-provider-details { max-width: 100%; overflow-wrap: anywhere; }
-  .title-history-disclosure { flex: none; margin-block: -3px; transition: opacity var(--ds-transition-duration); }
-  .title-history-disclosure svg { transition: transform var(--ds-transition-duration); }
-  .title-history-disclosure[aria-expanded="true"] svg { transform: rotate(180deg); }
-  @media (hover: hover) and (pointer: fine) {
-    .title-history-disclosure[aria-expanded="false"] { opacity: 0; }
-    .title-history-group:hover .title-history-disclosure,
-    .title-history-group:focus-within .title-history-disclosure { opacity: 1; }
-  }
-  @media (any-pointer: coarse) {
-    .title-history-disclosure[aria-expanded="false"] { opacity: 1; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .title-history-disclosure, .title-history-disclosure svg { transition: none; }
-  }
   .title-history-repeats {
     margin-top: 8px; padding-inline-start: 10px;
     border-inline-start: 1px solid var(--dsw-alias-border-l1);
@@ -323,40 +386,94 @@ function RevisionMeta({ row, dates, t, Tooltip, unchanged = false }) {
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("time", { dateTime: new Date(row.time).toISOString(), children: dates.format(row.time) })
   ] });
 }
-function HistoryGroup({ group, dates, t, ui }) {
+function HistoryGroup({ group, dates, t, ui, restore }) {
   const [expanded, setExpanded] = (0, import_react.useState)(false);
   const repeatsId = (0, import_react.useId)();
   const { revision, unchanged } = group;
-  const { Button, Tooltip, IconChevronDownOutlineRegular: Chevron } = ui;
-  const disclosureLabel = t(expanded ? "hideUnchanged" : "showUnchanged", { count: unchanged.length });
-  const disclosure = {
-    type: "button",
-    className: "title-history-disclosure",
-    "aria-label": disclosureLabel,
-    "aria-expanded": expanded,
-    "aria-controls": repeatsId,
-    onClick: () => setExpanded(!expanded)
-  };
-  const icon = Chevron ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Chevron, { size: 14 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": "true", children: expanded ? "\u2303" : "\u2304" });
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { className: "title-history-group", children: [
+  const { Button, Tooltip, Tag, IconRightUpOutlineRegular: Arrow } = ui;
+  const setTitleLabel = t("setTitleOf", { title: revision.title });
+  const toggleLabel = t(expanded ? "hideUnchanged" : "showUnchanged", { count: unchanged.length });
+  const accept = restore === void 0 ? void 0 : Button ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+    Button,
+    {
+      size: "sm",
+      variant: "ghost",
+      className: "title-history-restore",
+      onClick: restore.run,
+      disabled: restore.pending,
+      "aria-label": setTitleLabel,
+      icon: Arrow ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Arrow, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": "true", children: "\u2197" })
+    }
+  ) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+    "button",
+    {
+      type: "button",
+      className: "title-history-restore-fallback",
+      onClick: restore.run,
+      disabled: restore.pending,
+      title: setTitleLabel,
+      "aria-label": setTitleLabel,
+      children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": "true", children: "\u2197" })
+    }
+  );
+  const count = unchanged.length === 0 ? void 0 : Tag ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Tag, { tone: "quiet", className: "title-history-count", children: [
+    "\xD7",
+    unchanged.length
+  ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "title-history-count", "aria-hidden": "true", children: [
+    "\xD7",
+    unchanged.length
+  ] });
+  const name = unchanged.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "title-history-title", dir: "auto", children: revision.title }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+    "button",
+    {
+      type: "button",
+      className: "title-history-toggle",
+      dir: "auto",
+      "aria-expanded": expanded,
+      "aria-controls": repeatsId,
+      title: Tooltip ? void 0 : toggleLabel,
+      onClick: () => setExpanded(!expanded),
+      children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "title-history-title", children: revision.title }),
+        count
+      ]
+    }
+  );
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { className: "title-history-group", "data-seq": revision.seq, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "title-history-heading", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "title-history-title", dir: "auto", children: revision.title }),
-      unchanged.length > 0 && (Button ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, { ...disclosure, size: "sm", variant: "ghost", icon }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { ...disclosure, title: disclosureLabel, children: icon }))
+      Tooltip && unchanged.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Tooltip, { label: toggleLabel, side: "top", portal: true, delayMs: 260, maxWidth: 320, children: name }) : name,
+      accept !== void 0 && (Tooltip ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Tooltip, { label: setTitleLabel, side: "top", portal: true, delayMs: 260, maxWidth: 320, children: accept }) : accept)
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RevisionMeta, { row: revision, dates, t, Tooltip }),
     unchanged.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", { id: repeatsId, className: "title-history-repeats", role: "list", hidden: !expanded, children: expanded && unchanged.map((row) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RevisionMeta, { row, dates, t, Tooltip, unchanged: true }) }, row.seq)) })
   ] });
 }
-function HistoryList({ rows, t, language, ui }) {
+function HistoryList({ rows, t, language, ui, actions, busy }) {
   const dates = new Intl.DateTimeFormat(language, { dateStyle: "medium", timeStyle: "medium" });
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", { className: "title-history-list", role: "list", children: groupTitleHistory(rows).map(
-    (group) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HistoryGroup, { group, dates, t, ui }, group.revision.seq)
+  const groups = groupTitleHistory(rows);
+  const current = groups[0]?.revision.title;
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", { className: "title-history-list", role: "list", "aria-busy": busy, children: groups.map(
+    (group, index) => (
+      // The newest group holds the current title, and re-applying its text would only add an unchanged write.
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        HistoryGroup,
+        {
+          group,
+          dates,
+          t,
+          ui,
+          restore: actions === void 0 || index === 0 || group.revision.title === current ? void 0 : { pending: busy, run: () => actions.run(group) }
+        },
+        group.revision.seq
+      )
+    )
   ) });
 }
-function HistoryContent({ target, t, language, ui }) {
+function HistoryContent({ target, t, language, ui, canRename, rename }) {
   const { Button } = ui;
   const [state, setState] = (0, import_react.useState)({ status: "loading" });
   const [attempt, setAttempt] = (0, import_react.useState)(0);
+  const [renameState, setRenameState] = (0, import_react.useState)({ status: "idle" });
   const region = (0, import_react.useRef)(null);
   (0, import_react.useEffect)(() => {
     const controller = new AbortController();
@@ -372,23 +489,71 @@ function HistoryContent({ target, t, language, ui }) {
     setState({ status: "loading" });
     setAttempt(attempt + 1);
   };
+  const focusAfterRestore = (seq, which) => {
+    requestAnimationFrame(() => {
+      const node = region.current;
+      if (node === null) return;
+      const groups = [...node.querySelectorAll("li[data-seq]")];
+      const target2 = which === "same" ? groups.find((li) => li.dataset.seq === String(seq)) : groups.find((li) => Number(li.dataset.seq) < seq);
+      (target2?.querySelector(".title-history-restore, .title-history-restore-fallback") ?? node).focus({ preventScroll: true });
+    });
+  };
+  const restore = async (group) => {
+    const title = group.revision.title;
+    region.current?.focus({ preventScroll: true });
+    setRenameState({ status: "pending", title });
+    let accepted;
+    try {
+      accepted = await rename(title);
+    } catch (error) {
+      setRenameState({ status: "failed", message: error instanceof Error ? error.message : String(error) });
+      focusAfterRestore(group.revision.seq, "same");
+      return;
+    }
+    try {
+      const rows = await loadHistory(target.sessionId, new AbortController().signal);
+      setState({ status: "loaded", rows });
+    } catch {
+      setState({ status: "failed" });
+    }
+    setRenameState({ status: "restored", title: accepted });
+    focusAfterRestore(group.revision.seq, "older");
+  };
+  const pending = renameState.status === "pending";
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: region, className: "title-history-content", role: "region", "aria-label": t("history"), tabIndex: 0, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { role: "status", children: [
       state.status === "loading" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: t("loading") }),
-      state.status === "loaded" && state.rows.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: t("empty") })
+      state.status === "loaded" && state.rows.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: t("empty") }),
+      renameState.status === "pending" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "title-history-notice", children: t("settingTitle", { title: renameState.title }) }),
+      renameState.status === "restored" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "title-history-notice", children: t("titleSet", { title: renameState.title }) })
+    ] }),
+    renameState.status === "failed" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "title-history-notice", role: "alert", children: [
+      t("setTitleFailed"),
+      " ",
+      renameState.message
     ] }),
     state.status === "failed" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { role: "alert", children: t("failed") }),
       Button ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, { variant: "outline", onClick: retry, children: t("retry") }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: retry, children: t("retry") })
     ] }),
-    state.status === "loaded" && state.rows.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HistoryList, { rows: state.rows, t, language, ui })
+    state.status === "loaded" && state.rows.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+      HistoryList,
+      {
+        rows: state.rows,
+        t,
+        language,
+        ui,
+        busy: pending,
+        actions: canRename ? { run: restore } : void 0
+      }
+    )
   ] });
 }
 function apply(ctx) {
-  ctx.effect(() => ctx.locale.register(ID, labels), `${ID}: locale`);
+  ctx.effect(() => ctx.locale.register(ID2, labels), `${ID2}: locale`);
   const ui = nativePrimitives();
   const { Modal, IconClockOutlineRegular } = ui;
-  const menuLabel = ctx.locale.bind(ID);
+  const menuLabel = ctx.locale.bind(ID2);
   let target = null;
   const listeners = /* @__PURE__ */ new Set();
   const subscribe = (listener) => {
@@ -409,7 +574,7 @@ function apply(ctx) {
     cancelAnimationFrame(transitionFrame);
     transitionFrame = void 0;
   };
-  ctx.effect(() => cancelTransition, `${ID}: menu focus handoff`);
+  ctx.effect(() => cancelTransition, `${ID2}: menu focus handoff`);
   const open = (selected) => {
     cancelTransition();
     transitionFrame = requestAnimationFrame(() => {
@@ -430,33 +595,40 @@ function apply(ctx) {
       if (trigger.isConnected && document.activeElement === document.body) trigger.focus({ preventScroll: true });
     });
   };
-  function HistoryOverlay({ t }) {
+  function HistoryOverlay({ t, useSessionAccess }) {
     const selected = (0, import_react.useSyncExternalStore)(subscribe, getTarget);
     if (!selected) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", { children: css });
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", { children: css }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HistoryDialog, { t, target: selected, useSessionAccess })
+    ] });
+  }
+  function HistoryDialog({ t, target: target2, useSessionAccess }) {
+    const canRename = useSessionAccess(target2.sessionId, RENAME_ACCESS);
+    const rename = (title) => reapplyTitle(ctx.sessions, target2.sessionId, title);
     const content = /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
       HistoryContent,
       {
-        target: selected,
+        target: target2,
         t,
         language: ctx.locale.getLocale().active,
-        ui
+        ui,
+        canRename,
+        rename
       },
-      selected.sessionId
+      target2.sessionId
     );
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", { children: css }),
-      Modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Modal, { open: true, className: "title-history-modal", contentClassName: "title-history-modal-content", onClose: close, title: t("history"), closeLabel: t("close"), children: content }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BrowserModal, { onClose: close, title: t("history"), closeLabel: t("close"), children: content })
-    ] });
+    return Modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Modal, { open: true, className: "title-history-modal", contentClassName: "title-history-modal-content", onClose: close, title: t("history"), closeLabel: t("close"), children: content }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BrowserModal, { onClose: close, title: t("history"), closeLabel: t("close"), children: content });
   }
-  ctx.effect(() => ctx.slots.inject(OVERLAY, () => ctx.slots.register({ name: OVERLAY, id: ID, locale: ID }, HistoryOverlay)), `${ID}: overlay`);
+  ctx.effect(() => ctx.slots.inject(OVERLAY, () => ctx.slots.register({ name: OVERLAY, id: ID2, locale: ID2 }, HistoryOverlay)), `${ID2}: overlay`);
   if (IconClockOutlineRegular) {
     ctx.effect(() => ctx.slots.inject(MENU_ICON, () => ctx.slots.register(
-      { name: MENU_ICON, key: ID },
+      { name: MENU_ICON, key: ID2 },
       () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconClockOutlineRegular, { className: "title-history-menu-clock", "aria-hidden": "true" })
-    )), `${ID}: menu icon`);
+    )), `${ID2}: menu icon`);
   }
   ctx.effect(() => ctx.contextMenus.register({
-    id: ID,
+    id: ID2,
     target: "session",
     // DSH 0.2.2-rc.5 registers Copy session ID at order 450.
     order: 449,
@@ -464,10 +636,10 @@ function apply(ctx) {
     resolve: (selected) => [{
       id: "open",
       label: menuLabel("history"),
-      ...IconClockOutlineRegular ? { icon: { key: ID }, separatorBefore: true } : {},
+      ...IconClockOutlineRegular ? { icon: { key: ID2 }, separatorBefore: true } : {},
       run: () => open(selected)
     }]
-  }), `${ID}: menu action`);
+  }), `${ID2}: menu action`);
 }
 
     return module.exports;

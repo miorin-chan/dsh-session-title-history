@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Historique des titres de session",
-    "description": "Consultez la date de génération ou de modification manuelle des titres de session.",
+    "description": "Voyez quand chaque titre de session a été généré ou modifié, et réappliquez un ancien titre en un clic.",
     "detail": "docs/DETAIL.fr.md"
   }
 }

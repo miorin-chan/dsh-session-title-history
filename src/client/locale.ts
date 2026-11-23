@@ -4,6 +4,8 @@ const en = {
   fallback: 'Built-in title', first: 'First title', unchanged: 'Text unchanged',
   inherited: 'Inherited from parent session',
   showUnchanged: 'Show unchanged writes ({count})', hideUnchanged: 'Hide unchanged writes',
+  setTitleOf: 'Set “{title}” as the title', settingTitle: 'Setting the title to “{title}”…',
+  titleSet: 'Title set to “{title}”.', setTitleFailed: 'Could not set the title.',
 }
 
 export type Label = keyof typeof en
@@ -14,42 +16,56 @@ export const labels = {
     failed: '无法读取标题历史。', retry: '重试', manual: '手动修改', provider: '自动生成',
     fallback: '内置规则生成', first: '首次命名', unchanged: '文字未变', inherited: '继承自父会话',
     showUnchanged: '展开同名写入（{count} 条）', hideUnchanged: '折叠同名写入',
+    setTitleOf: '将「{title}」设为标题', settingTitle: '正在将标题设为「{title}」…',
+    titleSet: '标题已设为「{title}」。', setTitleFailed: '无法设置标题。',
   },
   ja: {
     history: 'タイトル履歴', close: '閉じる', loading: 'タイトル履歴を読み込み中…', empty: 'タイトル履歴はまだありません。',
     failed: 'タイトル履歴を読み込めませんでした。', retry: '再試行', manual: '手動変更', provider: '自動生成',
     fallback: '組み込みルールで生成', first: '最初のタイトル', unchanged: 'テキスト変更なし', inherited: '親セッションから継承',
     showUnchanged: '同じタイトルの記録を表示（{count} 件）', hideUnchanged: '同じタイトルの記録を折りたたむ',
+    setTitleOf: '「{title}」をタイトルに設定', settingTitle: '「{title}」にタイトルを設定中…',
+    titleSet: 'タイトルを「{title}」に設定しました。', setTitleFailed: 'タイトルを設定できませんでした。',
   },
   de: {
     history: 'Titelverlauf', close: 'Schließen', loading: 'Titelverlauf wird geladen…', empty: 'Noch kein Titelverlauf vorhanden.',
     failed: 'Der Titelverlauf konnte nicht geladen werden.', retry: 'Erneut versuchen', manual: 'Manuell geändert', provider: 'Automatisch erstellt',
     fallback: 'Durch integrierte Regel erstellt', first: 'Erster Titel', unchanged: 'Text unverändert', inherited: 'Aus der übergeordneten Sitzung übernommen',
     showUnchanged: 'Unveränderte Einträge anzeigen ({count})', hideUnchanged: 'Unveränderte Einträge ausblenden',
+    setTitleOf: '„{title}“ als Titel festlegen', settingTitle: 'Titel wird auf „{title}“ gesetzt…',
+    titleSet: 'Titel wurde auf „{title}“ gesetzt.', setTitleFailed: 'Der Titel konnte nicht festgelegt werden.',
   },
   es: {
     history: 'Historial de títulos', close: 'Cerrar', loading: 'Cargando el historial de títulos…', empty: 'Aún no hay historial de títulos.',
     failed: 'No se pudo cargar el historial de títulos.', retry: 'Reintentar', manual: 'Edición manual', provider: 'Generado automáticamente',
     fallback: 'Generado por regla integrada', first: 'Primer título', unchanged: 'Texto sin cambios', inherited: 'Heredado de la sesión de origen',
     showUnchanged: 'Mostrar registros sin cambios ({count})', hideUnchanged: 'Ocultar registros sin cambios',
+    setTitleOf: 'Establecer «{title}» como título', settingTitle: 'Estableciendo «{title}» como título…',
+    titleSet: 'Título establecido como «{title}».', setTitleFailed: 'No se pudo establecer el título.',
   },
   fr: {
     history: 'Historique des titres', close: 'Fermer', loading: 'Chargement de l’historique des titres…', empty: 'Aucun titre dans l’historique.',
     failed: 'Impossible de charger l’historique des titres.', retry: 'Réessayer', manual: 'Modification manuelle', provider: 'Généré automatiquement',
     fallback: 'Généré par une règle intégrée', first: 'Premier titre', unchanged: 'Texte inchangé', inherited: 'Hérité de la session parente',
     showUnchanged: 'Afficher les entrées inchangées ({count})', hideUnchanged: 'Masquer les entrées inchangées',
+    setTitleOf: 'Définir « {title} » comme titre', settingTitle: 'Définition du titre sur « {title} »…',
+    titleSet: 'Le titre est maintenant « {title} ».', setTitleFailed: 'Impossible de définir le titre.',
   },
   pt: {
     history: 'Histórico de títulos', close: 'Fechar', loading: 'A carregar o histórico de títulos…', empty: 'Ainda não há histórico de títulos.',
     failed: 'Não foi possível carregar o histórico de títulos.', retry: 'Tentar novamente', manual: 'Edição manual', provider: 'Gerado automaticamente',
     fallback: 'Gerado por regra integrada', first: 'Primeiro título', unchanged: 'Texto inalterado', inherited: 'Herdado da sessão de origem',
     showUnchanged: 'Mostrar registos inalterados ({count})', hideUnchanged: 'Ocultar registos inalterados',
+    setTitleOf: 'Definir «{title}» como título', settingTitle: 'A definir «{title}» como título…',
+    titleSet: 'Título definido como «{title}».', setTitleFailed: 'Não foi possível definir o título.',
   },
   ru: {
     history: 'История заголовков', close: 'Закрыть', loading: 'Загрузка истории заголовков…', empty: 'История заголовков пока пуста.',
     failed: 'Не удалось загрузить историю заголовков.', retry: 'Повторить', manual: 'Изменено вручную', provider: 'Создано автоматически',
     fallback: 'Создано встроенным правилом', first: 'Первый заголовок', unchanged: 'Текст не изменился', inherited: 'Унаследовано от родительской сессии',
     showUnchanged: 'Показать записи без изменений ({count})', hideUnchanged: 'Скрыть записи без изменений',
+    setTitleOf: 'Сделать «{title}» заголовком', settingTitle: 'Установка заголовка «{title}»…',
+    titleSet: 'Заголовок изменён на «{title}».', setTitleFailed: 'Не удалось изменить заголовок.',
   },
 }
 

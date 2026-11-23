@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Sitzungstitelverlauf",
-    "description": "Zeigt, wann Sitzungstitel automatisch erstellt oder manuell geändert wurden.",
+    "description": "Zeigt, wann jeder Sitzungstitel erstellt oder geändert wurde, und wendet einen früheren Titel mit einem Klick wieder an.",
     "detail": "docs/DETAIL.de.md"
   }
 }
