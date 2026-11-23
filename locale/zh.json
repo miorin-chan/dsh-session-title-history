@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "会话标题历史",
+    "description": "查看会话标题何时修改，以及是手动输入还是自动生成。",
+    "detail": "docs/DETAIL.zh.md"
+  }
+}

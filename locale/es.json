@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Historial de títulos de sesión",
+    "description": "Consulta cuándo se generó o editó manualmente cada título de sesión.",
+    "detail": "docs/DETAIL.es.md"
+  }
+}

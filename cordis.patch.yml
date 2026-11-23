@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-session-title-history
+      name: '@miorin/dsh-session-title-history'
