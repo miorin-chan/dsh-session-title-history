@@ -36,6 +36,9 @@ Check whether new behavior belongs in its own bundle.
 
 ## Structure
 
+`npm run build:tools` compiles `.mts` tooling in `scripts/` to adjacent ignored `.mjs` files.
+Node.js 22.18 or newer runs the `.test.mts` files directly.
+
 - Use the workspace TypeScript base for plugins with code.
   Put Host, Client, and private module sources under `src/host/`, `src/client/`, and `src/lib/` as needed.
   The build generates `index.js`, `client.js`, `lib/history.js`, and `lib/tool.js`.

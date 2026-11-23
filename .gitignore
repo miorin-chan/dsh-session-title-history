@@ -4,3 +4,7 @@ node_modules/
 /client.js
 /lib/history.js
 /lib/tool.js
+
+# Compiled tooling
+/scripts/build.mjs
+/scripts/sync-types.mjs
