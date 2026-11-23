@@ -4,9 +4,8 @@
 
 Open the session’s **⋯** menu and choose **Title history** to see the original title,
 later edits, their timestamps, and which titles were generated automatically.
-Click the pencil beside a past title to edit and save that history entry in place.
-Click **↗** to make the displayed text current again.
-DSH records the restore as a manual rename.
+Click the pencil beside the current title to rename the session in the dialog.
+The previous name stays in the history. Click **↗** beside a past title to make it current again.
 These actions appear while the current connection may rename the session.
 An Agent in the conversation can list, edit, or restore past titles through the `session_title_history` tool.
 

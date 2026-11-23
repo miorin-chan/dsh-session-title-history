@@ -1,6 +1,6 @@
 Öffnen Sie das **⋯**-Menü der Sitzung und wählen Sie **Titelverlauf**.
 
-Klicken Sie neben einem früheren Titel auf den Stift, um den Eintrag zu bearbeiten, oder auf **↗**,
-um ihn als aktuellen Titel zu übernehmen.
+Klicken Sie auf den Stift neben dem aktuellen Titel, um die Sitzung umzubenennen.
+Mit **↗** neben einem früheren Titel stellen Sie diesen wieder her.
 
 Ein Agent im Chat kann Titel auch mit dem Tool `session_title_history` auflisten, bearbeiten und wiederherstellen.

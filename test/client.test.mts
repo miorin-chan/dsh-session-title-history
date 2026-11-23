@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { test } from 'node:test'
-import { reapplyTitle } from '../src/client/rename.ts'
+import { renameSession } from '../src/client/rename.ts'
 
 let registration
 globalThis.window = { __ModuleLoader__: { load(entry) { registration = entry } } }
@@ -80,20 +80,24 @@ function sessionsWith(rename) {
   }
 }
 
-test('re-applies a past title through the native rename path under its own reference source', async () => {
+test('uses the native rename path for a new title or a restored title', async () => {
   const renames = []
   const sessions = sessionsWith(async title => {
     renames.push(title)
     return { ok: true, value: { title: title.trim(), seq: 9 } }
   })
-  assert.equal(await reapplyTitle(sessions, 'session-one', '  Past title  '), 'Past title')
-  assert.deepEqual(sessions.acquisitions, [{ target: 'session-one', options: { source: id } }])
-  assert.deepEqual(renames, ['  Past title  '])
+  assert.equal(await renameSession(sessions, 'session-one', '  New title  '), 'New title')
+  assert.equal(await renameSession(sessions, 'session-one', 'Past title'), 'Past title')
+  assert.deepEqual(sessions.acquisitions, [
+    { target: 'session-one', options: { source: id } },
+    { target: 'session-one', options: { source: id } },
+  ])
+  assert.deepEqual(renames, ['  New title  ', 'Past title'])
 })
 
 test('surfaces the Host reason when the rename is refused, and the failure when the Session cannot be acquired', async () => {
   const refused = sessionsWith(async () => ({ ok: false, error: { code: 'session/title-invalid', message: 'Title is too long' } }))
-  await assert.rejects(reapplyTitle(refused, 'session-one', 'Past title'), /Title is too long/)
+  await assert.rejects(renameSession(refused, 'session-one', 'Past title'), /Title is too long/)
   const unreachable = { async using() { throw new Error('Session is unavailable') } }
-  await assert.rejects(reapplyTitle(unreachable, 'session-one', 'Past title'), /Session is unavailable/)
+  await assert.rejects(renameSession(unreachable, 'session-one', 'Past title'), /Session is unavailable/)
 })
