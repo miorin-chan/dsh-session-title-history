@@ -167,22 +167,16 @@ var labels = {
 // src/client/index.tsx
 var import_jsx_runtime = require("react/jsx-runtime");
 var ID = "dsh-session-title-history";
-var MENU = "sidebar.workspaces.session.menu.item";
+var MENU_ICON = "contextMenu.icon";
 var OVERLAY = "shell.overlay";
-var inject = ["locale", "slots"];
+var inject = ["locale", "slots", "contextMenus"];
 var css = `
-  .title-history-menu {
-    display: flex; align-items: center; min-height: 32px; width: 100%; padding: 4px 10px;
-    text-align: start; border: 0; border-radius: 6px; font: inherit; color: inherit;
-    background: transparent; cursor: pointer;
-  }
-  .title-history-menu:hover, .title-history-menu:focus-visible { background: var(--dsw-alias-bg-layer-2, #8882); }
   .title-history-dialog {
     color: var(--dsw-alias-label-primary, CanvasText); background: var(--dsw-alias-bg-overlay, Canvas);
-    border: 1px solid var(--dsw-alias-border-l1, #8885); border-radius: 14px;
+    border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px;
     width: min(32rem, calc(100% - 2rem)); max-height: 85vh; padding: 0; font: inherit; pointer-events: auto;
   }
-  .title-history-dialog::backdrop { background: #0006; }
+  .title-history-dialog::backdrop { background: var(--dsw-alias-bg-mask-1); }
   .title-history-dialog > header { display: flex; align-items: center; justify-content: space-between; padding: 1rem; gap: 1rem; }
   .title-history-dialog h2 { margin: 0; font-size: 1rem; }
   .title-history-dialog header button { color: inherit; background: transparent; border: 0; font: inherit; cursor: pointer; }
@@ -192,19 +186,19 @@ var css = `
   .title-history-source { flex-basis: 100%; overflow-wrap: anywhere; }
   .title-history-content > p { margin: 0 0 .75rem; color: var(--dsw-alias-label-secondary, inherit); overflow-wrap: anywhere; }
   .title-history-content ol { margin: 0; padding: 0; list-style: none; }
-  .title-history-content li { padding: .75rem .1rem; border-top: 1px solid var(--dsw-alias-border-l1, #8883); }
+  .title-history-content li { padding: .75rem .1rem; border-top: 1px solid var(--dsw-alias-border-l1); }
   .title-history-meta { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; }
+  .title-history-meta .title-history-source-label { flex: none; }
   .title-history-meta time { margin-inline-start: auto; }
   .title-history-meta, .title-history-notes, .title-history-previous { color: var(--dsw-alias-label-secondary, inherit); font-size: .8125em; }
   .title-history-content li p { margin: .25rem 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
   .title-history-notes { display: flex; flex-wrap: wrap; gap: .25rem .75rem; }
 `;
-function nativeModal() {
+function nativePrimitives() {
   try {
-    const module2 = require("@deepseek-ai/dsh-client-ui-primitives");
-    return typeof module2.Modal === "function" ? module2.Modal : void 0;
+    return require("@deepseek-ai/dsh-client-ui-primitives");
   } catch {
-    return void 0;
+    return {};
   }
 }
 function BrowserModal({ title, closeLabel, onClose, children }) {
@@ -259,14 +253,14 @@ async function loadHistory(sessionId, signal) {
   if (data === null || typeof data !== "object" || !("history" in data) || !Array.isArray(data.history) || !data.history.every(isRevision)) throw new Error("Invalid session title history response");
   return data.history;
 }
-function HistoryList({ rows, t, language }) {
+function HistoryList({ rows, t, language, Tag }) {
   const dates = new Intl.DateTimeFormat(language, { dateStyle: "medium", timeStyle: "medium" });
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", { children: rows.map((row) => {
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", { role: "list", children: rows.map((row) => {
     const source = row.source.kind === "user" ? t("manual") : t(row.source.kind);
     const details = row.source.kind === "provider" ? row.source.model ? `${row.source.provider} \xB7 ${row.source.model.provider}/${row.source.model.model}` : row.source.provider : void 0;
     return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "title-history-meta", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: source }),
+        Tag ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Tag, { className: "title-history-source-label", tone: "neutral", children: source }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: source }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("time", { dateTime: new Date(row.time).toISOString(), children: dates.format(row.time) }),
         details !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("bdi", { className: "title-history-source", children: details })
       ] }),
@@ -284,7 +278,7 @@ function HistoryList({ rows, t, language }) {
     ] }, row.seq);
   }) });
 }
-function HistoryContent({ target, t, language }) {
+function HistoryContent({ target, t, language, Button, Tag }) {
   const [state, setState] = (0, import_react.useState)({ status: "loading" });
   const [attempt, setAttempt] = (0, import_react.useState)(0);
   const region = (0, import_react.useRef)(null);
@@ -297,6 +291,11 @@ function HistoryContent({ target, t, language }) {
     });
     return () => controller.abort();
   }, [target.sessionId, attempt]);
+  const retry = () => {
+    region.current?.focus();
+    setState({ status: "loading" });
+    setAttempt(attempt + 1);
+  };
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: region, className: "title-history-content", role: "region", "aria-label": t("history"), tabIndex: 0, children: [
     target.displayTitle && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { dir: "auto", children: target.displayTitle }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { role: "status", children: [
@@ -305,18 +304,15 @@ function HistoryContent({ target, t, language }) {
     ] }),
     state.status === "failed" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { role: "alert", children: t("failed") }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: () => {
-        region.current?.focus();
-        setState({ status: "loading" });
-        setAttempt(attempt + 1);
-      }, children: t("retry") })
+      Button ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, { variant: "outline", onClick: retry, children: t("retry") }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: retry, children: t("retry") })
     ] }),
-    state.status === "loaded" && state.rows.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HistoryList, { rows: state.rows, t, language })
+    state.status === "loaded" && state.rows.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HistoryList, { rows: state.rows, t, language, Tag })
   ] });
 }
 function apply(ctx) {
   ctx.effect(() => ctx.locale.register(ID, labels), `${ID}: locale`);
-  const Modal = nativeModal();
+  const { Modal, Button, Tag, IconClockOutlineRegular } = nativePrimitives();
+  const menuLabel = ctx.locale.bind(ID);
   let target = null;
   const listeners = /* @__PURE__ */ new Set();
   const subscribe = (listener) => {
@@ -331,24 +327,59 @@ function apply(ctx) {
     for (const listener of listeners) listener();
   };
   const close = () => setTarget(null);
-  function HistoryAction({ sessionId, displayTitle, useMenuOpenState, t }) {
-    const [, setOpen] = useMenuOpenState();
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "title-history-menu", type: "button", role: "menuitem", onClick: () => {
-      setOpen(false);
-      setTarget({ sessionId, displayTitle });
-    }, children: t("history") });
-  }
+  let openFrame;
+  const cancelOpen = () => {
+    if (openFrame === void 0) return;
+    cancelAnimationFrame(openFrame);
+    openFrame = void 0;
+  };
+  ctx.effect(() => cancelOpen, `${ID}: menu focus handoff`);
+  const open = (selected) => {
+    cancelOpen();
+    openFrame = requestAnimationFrame(() => {
+      openFrame = void 0;
+      setTarget(selected);
+    });
+  };
   function HistoryOverlay({ t }) {
     const selected = (0, import_react.useSyncExternalStore)(subscribe, getTarget);
     if (!selected) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", { children: css });
-    const content = /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HistoryContent, { target: selected, t, language: ctx.locale.getLocale().active }, selected.sessionId);
+    const content = /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+      HistoryContent,
+      {
+        target: selected,
+        t,
+        language: ctx.locale.getLocale().active,
+        Button,
+        Tag
+      },
+      selected.sessionId
+    );
     return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", { children: css }),
       Modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Modal, { open: true, onClose: close, title: t("history"), closeLabel: t("close"), children: content }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BrowserModal, { onClose: close, title: t("history"), closeLabel: t("close"), children: content })
     ] });
   }
   ctx.effect(() => ctx.slots.inject(OVERLAY, () => ctx.slots.register({ name: OVERLAY, id: ID, locale: ID }, HistoryOverlay)), `${ID}: overlay`);
-  ctx.effect(() => ctx.slots.inject(MENU, () => ctx.slots.register({ name: MENU, id: ID, locale: ID }, HistoryAction)), `${ID}: menu`);
+  if (IconClockOutlineRegular) {
+    ctx.effect(() => ctx.slots.inject(MENU_ICON, () => ctx.slots.register(
+      { name: MENU_ICON, key: ID },
+      () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconClockOutlineRegular, { "aria-hidden": "true" })
+    )), `${ID}: menu icon`);
+  }
+  ctx.effect(() => ctx.contextMenus.register({
+    id: ID,
+    target: "session",
+    // DSH 0.2.2-rc.5 registers Copy session ID at order 450.
+    order: 449,
+    observe: () => [ctx.locale],
+    resolve: (selected) => [{
+      id: "open",
+      label: menuLabel("history"),
+      ...IconClockOutlineRegular ? { icon: { key: ID } } : {},
+      run: () => open(selected)
+    }]
+  }), `${ID}: menu action`);
 }
 
     return module.exports;

@@ -2,8 +2,8 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
-import type { PropsRuntime, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ContextMenuTargetMap } from '@deepseek-ai/dsh-client-ui-context-menu/client'
+import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { HISTORY_PATH } from '../lib/history.js'
@@ -11,13 +11,15 @@ import type { TitleRevision } from '../lib/history.js'
 import { labels } from './locale.js'
 
 const ID = 'dsh-session-title-history'
-const MENU = 'sidebar.workspaces.session.menu.item'
+const MENU_ICON = 'contextMenu.icon'
 const OVERLAY = 'shell.overlay'
 
-export const inject = ['locale', 'slots']
+export const inject = ['locale', 'slots', 'contextMenus']
 
 type Translation = PropsLocale<typeof ID>['t']
-type Target = { sessionId: SessionId; displayTitle: string }
+type Target = ContextMenuTargetMap['session']
+type Primitives = Pick<typeof import('@deepseek-ai/dsh-client-ui-primitives'),
+  'Modal' | 'Button' | 'Tag' | 'IconClockOutlineRegular'>
 type LoadState = { status: 'loading' | 'failed' } | { status: 'loaded'; rows: TitleRevision[] }
 type ModalProps = {
   title: string
@@ -27,18 +29,12 @@ type ModalProps = {
 }
 
 const css = `
-  .title-history-menu {
-    display: flex; align-items: center; min-height: 32px; width: 100%; padding: 4px 10px;
-    text-align: start; border: 0; border-radius: 6px; font: inherit; color: inherit;
-    background: transparent; cursor: pointer;
-  }
-  .title-history-menu:hover, .title-history-menu:focus-visible { background: var(--dsw-alias-bg-layer-2, #8882); }
   .title-history-dialog {
     color: var(--dsw-alias-label-primary, CanvasText); background: var(--dsw-alias-bg-overlay, Canvas);
-    border: 1px solid var(--dsw-alias-border-l1, #8885); border-radius: 14px;
+    border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px;
     width: min(32rem, calc(100% - 2rem)); max-height: 85vh; padding: 0; font: inherit; pointer-events: auto;
   }
-  .title-history-dialog::backdrop { background: #0006; }
+  .title-history-dialog::backdrop { background: var(--dsw-alias-bg-mask-1); }
   .title-history-dialog > header { display: flex; align-items: center; justify-content: space-between; padding: 1rem; gap: 1rem; }
   .title-history-dialog h2 { margin: 0; font-size: 1rem; }
   .title-history-dialog header button { color: inherit; background: transparent; border: 0; font: inherit; cursor: pointer; }
@@ -48,21 +44,21 @@ const css = `
   .title-history-source { flex-basis: 100%; overflow-wrap: anywhere; }
   .title-history-content > p { margin: 0 0 .75rem; color: var(--dsw-alias-label-secondary, inherit); overflow-wrap: anywhere; }
   .title-history-content ol { margin: 0; padding: 0; list-style: none; }
-  .title-history-content li { padding: .75rem .1rem; border-top: 1px solid var(--dsw-alias-border-l1, #8883); }
+  .title-history-content li { padding: .75rem .1rem; border-top: 1px solid var(--dsw-alias-border-l1); }
   .title-history-meta { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; }
+  .title-history-meta .title-history-source-label { flex: none; }
   .title-history-meta time { margin-inline-start: auto; }
   .title-history-meta, .title-history-notes, .title-history-previous { color: var(--dsw-alias-label-secondary, inherit); font-size: .8125em; }
   .title-history-content li p { margin: .25rem 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
   .title-history-notes { display: flex; flex-wrap: wrap; gap: .25rem .75rem; }
 `
 
-/** Prefer the DSH shell's shared Modal when present in the browser module table. */
-function nativeModal(): typeof import('@deepseek-ai/dsh-client-ui-primitives').Modal | undefined {
+/** Use the primitive components supplied by the Web shell's module table. */
+function nativePrimitives(): Partial<Primitives> {
   try {
-    const module = require('@deepseek-ai/dsh-client-ui-primitives') as Partial<typeof import('@deepseek-ai/dsh-client-ui-primitives')>
-    return typeof module.Modal === 'function' ? module.Modal : undefined
+    return require('@deepseek-ai/dsh-client-ui-primitives') as Partial<Primitives>
   } catch {
-    return undefined
+    return {}
   }
 }
 
@@ -115,16 +111,21 @@ async function loadHistory(sessionId: SessionId, signal: AbortSignal): Promise<T
   return data.history
 }
 
-function HistoryList({ rows, t, language }: { rows: TitleRevision[]; t: Translation; language: string }) {
+function HistoryList({ rows, t, language, Tag }: {
+  rows: TitleRevision[]
+  t: Translation
+  language: string
+  Tag?: Primitives['Tag']
+}) {
   const dates = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'medium' })
-  return <ol>{rows.map(row => {
+  return <ol role="list">{rows.map(row => {
     const source = row.source.kind === 'user' ? t('manual') : t(row.source.kind)
     const details = row.source.kind === 'provider'
       ? row.source.model ? `${row.source.provider} · ${row.source.model.provider}/${row.source.model.model}` : row.source.provider
       : undefined
     return <li key={row.seq}>
       <div className="title-history-meta">
-        <span>{source}</span>
+        {Tag ? <Tag className="title-history-source-label" tone="neutral">{source}</Tag> : <span>{source}</span>}
         <time dateTime={new Date(row.time).toISOString()}>{dates.format(row.time)}</time>
         {details !== undefined && <bdi className="title-history-source">{details}</bdi>}
       </div>
@@ -141,7 +142,13 @@ function HistoryList({ rows, t, language }: { rows: TitleRevision[]; t: Translat
   })}</ol>
 }
 
-function HistoryContent({ target, t, language }: { target: Target; t: Translation; language: string }) {
+function HistoryContent({ target, t, language, Button, Tag }: {
+  target: Target
+  t: Translation
+  language: string
+  Button?: Primitives['Button']
+  Tag?: Primitives['Tag']
+}) {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const region = useRef<HTMLDivElement>(null)
@@ -154,6 +161,11 @@ function HistoryContent({ target, t, language }: { target: Target; t: Translatio
     })
     return () => controller.abort()
   }, [target.sessionId, attempt])
+  const retry = () => {
+    region.current?.focus()
+    setState({ status: 'loading' })
+    setAttempt(attempt + 1)
+  }
   return <div ref={region} className="title-history-content" role="region" aria-label={t('history')} tabIndex={0}>
     {target.displayTitle && <p dir="auto">{target.displayTitle}</p>}
     <div role="status">
@@ -162,19 +174,17 @@ function HistoryContent({ target, t, language }: { target: Target; t: Translatio
     </div>
     {state.status === 'failed' && <>
       <p role="alert">{t('failed')}</p>
-      <button type="button" onClick={() => {
-        region.current?.focus()
-        setState({ status: 'loading' })
-        setAttempt(attempt + 1)
-      }}>{t('retry')}</button>
+      {Button ? <Button variant="outline" onClick={retry}>{t('retry')}</Button>
+        : <button type="button" onClick={retry}>{t('retry')}</button>}
     </>}
-    {state.status === 'loaded' && state.rows.length > 0 && <HistoryList rows={state.rows} t={t} language={language} />}
+    {state.status === 'loaded' && state.rows.length > 0 && <HistoryList rows={state.rows} t={t} language={language} Tag={Tag} />}
   </div>
 }
 
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.locale.register(ID, labels), `${ID}: locale`)
-  const Modal = nativeModal()
+  const { Modal, Button, Tag, IconClockOutlineRegular } = nativePrimitives()
+  const menuLabel = ctx.locale.bind(ID)
   let target: Target | null = null
   const listeners = new Set<() => void>()
   const subscribe = (listener: () => void) => {
@@ -187,19 +197,27 @@ export function apply(ctx: Context): void {
     for (const listener of listeners) listener()
   }
   const close = () => setTarget(null)
-
-  function HistoryAction({ sessionId, displayTitle, useMenuOpenState, t }: PropsRuntime<typeof MENU> & PropsLocale<typeof ID>) {
-    const [, setOpen] = useMenuOpenState()
-    return <button className="title-history-menu" type="button" role="menuitem" onClick={() => {
-      setOpen(false)
-      setTarget({ sessionId, displayTitle })
-    }}>{t('history')}</button>
+  let openFrame: number | undefined
+  const cancelOpen = () => {
+    if (openFrame === undefined) return
+    cancelAnimationFrame(openFrame)
+    openFrame = undefined
+  }
+  ctx.effect(() => cancelOpen, `${ID}: menu focus handoff`)
+  const open = (selected: Target) => {
+    cancelOpen()
+    // Let the native menu restore its trigger before Modal captures return focus.
+    openFrame = requestAnimationFrame(() => {
+      openFrame = undefined
+      setTarget(selected)
+    })
   }
 
   function HistoryOverlay({ t }: PropsLocale<typeof ID>) {
     const selected = useSyncExternalStore(subscribe, getTarget)
     if (!selected) return <style>{css}</style>
-    const content = <HistoryContent key={selected.sessionId} target={selected} t={t} language={ctx.locale.getLocale().active} />
+    const content = <HistoryContent key={selected.sessionId} target={selected} t={t} language={ctx.locale.getLocale().active}
+      Button={Button} Tag={Tag} />
     return <><style>{css}</style>{Modal
       ? <Modal open onClose={close} title={t('history')} closeLabel={t('close')}>{content}</Modal>
       : <BrowserModal onClose={close} title={t('history')} closeLabel={t('close')}>{content}</BrowserModal>}
@@ -207,5 +225,21 @@ export function apply(ctx: Context): void {
   }
 
   ctx.effect(() => ctx.slots.inject(OVERLAY, () => ctx.slots.register({ name: OVERLAY, id: ID, locale: ID }, HistoryOverlay)), `${ID}: overlay`)
-  ctx.effect(() => ctx.slots.inject(MENU, () => ctx.slots.register({ name: MENU, id: ID, locale: ID }, HistoryAction)), `${ID}: menu`)
+  if (IconClockOutlineRegular) {
+    ctx.effect(() => ctx.slots.inject(MENU_ICON, () => ctx.slots.register({ name: MENU_ICON, key: ID },
+      () => <IconClockOutlineRegular aria-hidden="true" />)), `${ID}: menu icon`)
+  }
+  ctx.effect(() => ctx.contextMenus.register({
+    id: ID,
+    target: 'session',
+    // DSH 0.2.2-rc.5 registers Copy session ID at order 450.
+    order: 449,
+    observe: () => [ctx.locale],
+    resolve: selected => [{
+      id: 'open',
+      label: menuLabel('history'),
+      ...(IconClockOutlineRegular ? { icon: { key: ID } } : {}),
+      run: () => open(selected),
+    }],
+  }), `${ID}: menu action`)
 }

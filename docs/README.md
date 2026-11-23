@@ -5,8 +5,9 @@ Host 通过 Connection 的认证通道按需读取一个会话。`sessionQuery.o
 按事件顺序推导旧标题，之后按序号倒序显示。
 文本相同的写入也保留，以反映来源变化和手动固定。
 
-客户端用侧栏会话菜单扩展槽和 `shell.overlay` 挂载，
-优先复用运行时提供的 `@deepseek-ai/dsh-client-ui-primitives` `Modal`。
+客户端向 `contextMenus` 注册原生会话菜单项，排在「复制会话 ID」上一项，并通过 `contextMenu.icon` 提供原生时钟图标。
+弹窗由 `shell.overlay` 挂载，复用宿主提供的 `Modal`、来源 `Tag` 和重试 `Button`。
+历史列表保留标题前后对照及时间线布局，颜色跟随 DSH 主题。
 停用时清理由插件注册的菜单、弹层与读取接口。分叉只呈现实际继承的前缀。
 DSH 客户端的分叉命名也走原生重命名接口，日志将其记为 `user`。
 界面按这个来源标注。未写入或已丢失的历史无法恢复。
