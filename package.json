@@ -1,6 +1,6 @@
 {
   "name": "@miorin/dsh-session-title-history",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "See when each session title was generated or edited.",
   "type": "module",
@@ -87,5 +87,13 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/miorin-chan/dsh-session-title-history.git"
+  },
+  "homepage": "https://github.com/miorin-chan/dsh-session-title-history#readme",
+  "bugs": {
+    "url": "https://github.com/miorin-chan/dsh-session-title-history/issues"
   }
 }
