@@ -1,5 +1,5 @@
 /**
- * Build this plugin's runtime files from TypeScript sources.
+ * Build this plugin's Host and Client halves from TypeScript sources.
  *
  *   src/host/index.ts        → index.js    ESM for the Host process
  *   src/client/index.ts(x)   → client.js   classic script for the Web module loader
@@ -11,10 +11,11 @@
  * self-contained apart from those externals.
  *
  * Usage:
- *   node scripts/build.mjs           write the runtime files
- *   node scripts/build.mjs --check   fail when a runtime file is missing or stale
+ *   node scripts/build.mjs           write both artifacts
+ *   node scripts/build.mjs --check   fail when an artifact is stale
  *
- * The npm `prepare` script runs this build during `npm ci` and `npm pack`.
+ * esbuild is a development dependency. Git ignores the generated artifacts.
+ * `--check` catches missing or stale local output.
  */
 
 import type { BuildOptions, Plugin } from 'esbuild'
@@ -42,10 +43,10 @@ const CLIENT_EXTERNAL = [
 
 const HOST_EXTERNAL = ['node:*']
 
-/** Rewrite `../lib/<name>.js` in Host source to `./lib/<name>.js` in the generated `index.js`. */
+/** `src/host` imports `../lib/<name>.js`; the built `index.js` imports `./lib/<name>.js`. */
 const HOST_MODULE_IMPORT = /^\.\.\/lib\/(.+\.js)$/
 
-/** Resolve private Host modules from the generated `lib/` directory at runtime. */
+/** Keep the Host entry's private-module imports pointing at the built `lib/` modules. */
 const hostModules: Plugin = {
   name: 'host-modules',
   setup(context) {
@@ -155,8 +156,10 @@ if (clientEntry !== undefined) {
   targets.push({ file: 'client.js', content: envelope(code) })
 }
 
-// Emit private Host modules separately so tests and the npm package can
-// import `lib/<name>.js` directly.
+// Private Host modules stay separate artifacts: tests and the published package
+// import `lib/<name>.js` directly, so the Host bundle must not inline them away.
+// The `hostModules` plugin above keeps the Host entry's `../lib/<name>.js`
+// imports pointing at the emitted modules.
 const moduleDir = resolve(ROOT, 'src/lib')
 if (existsSync(moduleDir)) {
   for (const path of await sourcesOf(moduleDir)) {
