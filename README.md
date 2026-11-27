@@ -18,4 +18,14 @@ Use one installation route per profile because both use the same plugin row.
 History includes title events still present in the session log, including writes made before installation.
 A manually requested regeneration is labeled by its generator.
 DSH uses its rename API to append a number when it forks a session, so that entry also appears as **Manual edit**.
+
+## Screenshots
+
+The dialog shows the current title and earlier manual and generated titles.
+The screenshots show the Chinese interface.
+
+| | Light | Dark |
+| --- | --- | --- |
+| Title history dialog | ![Title history dialog with current and past titles in the light theme](docs/assets/screenshots/main-light.png) | ![Title history dialog with current and past titles in the dark theme](docs/assets/screenshots/main-dark.png) |
+
 [Project documentation](docs/README.md)
