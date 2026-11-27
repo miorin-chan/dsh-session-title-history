@@ -1,5 +1,7 @@
 # 会话标题历史开发说明
 
+- [产品设计](../DESIGN.md)：问题、目标体验、边界与成功标准。
+
 宿主通过 Connection 为 profile 所有者读写标题历史。
 `sessionQuery.observeSession` 也能读取归档日志。
 读取接口返回 `session/title` 的序号、时间、标题、来源、继承标记和已保存的文字修订。
